@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskSync - Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Page -->
+        <div id="loginPage" class="page active">
+            <div class="auth-container">
+                <div class="auth-form">
+                    <h1 class="logo">✨ TaskSync</h1>
+                    <p class="subtitle">Sign in to your account</p>
+                    
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" placeholder="Enter your username" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" class="form-input">
+                    </div>
+                    
+                    <div id="loginError" class="error-message"></div>
+                    
+                    <button id="loginBtn" class="btn btn-primary">LOGIN</button>
+                    
+                    <div class="auth-footer">
+                        <p>Don't have an account? <a href="#" onclick="switchToSignup(event)">Sign up</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signup Page -->
+        <div id="signupPage" class="page">
+            <div class="auth-container">
+                <div class="auth-form">
+                    <h1 class="logo">TaskSync</h1>
+                    <p class="subtitle">Create your account</p>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="signupFirstName">First Name</label>
+                            <input type="text" id="signupFirstName" placeholder="First name" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="signupLastName">Last Name</label>
+                            <input type="text" id="signupLastName" placeholder="Last name" class="form-input">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupEmail">Email</label>
+                        <input type="email" id="signupEmail" placeholder="Enter your email" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupUsername">Username</label>
+                        <input type="text" id="signupUsername" placeholder="Choose a username" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupPassword">Password</label>
+                        <input type="password" id="signupPassword" placeholder="Create a password (min 8 chars)" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupConfirmPassword">Confirm Password</label>
+                        <input type="password" id="signupConfirmPassword" placeholder="Confirm password" class="form-input">
+                    </div>
+                    
+                    <div id="signupError" class="error-message"></div>
+                    
+                    <button id="signupBtn" class="btn btn-primary">CREATE ACCOUNT</button>
+                    
+                    <div class="auth-footer">
+                        <p>Already have an account? <a href="#" onclick="switchToLogin(event)">Sign in</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Setup Page -->
+        <div id="profileSetupPage" class="page">
+            <div class="setup-container">
+                <div class="setup-form">
+                    <h1>Complete Your Profile</h1>
+                    <p class="subtitle">Tell us about yourself to personalize your experience</p>
+                    
+                    <div class="progress-indicator">
+                        <div class="progress-step active">1</div>
+                        <div class="progress-line"></div>
+                        <div class="progress-step">2</div>
+                        <div class="progress-line"></div>
+                        <div class="progress-step">3</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profileBio">About You (Optional)</label>
+                        <textarea id="profileBio" placeholder="Tell us about yourself..." class="form-input" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profileTimezone">Timezone</label>
+                        <select id="profileTimezone" class="form-input">
+                            <option value="UTC">UTC</option>
+                            <option value="UTC+5:30">UTC+5:30 (India)</option>
+                            <option value="UTC+8">UTC+8 (Singapore)</option>
+                            <option value="UTC-5">UTC-5 (EST)</option>
+                            <option value="UTC-8">UTC-8 (PST)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="profileWorkStart">Work Start Hour</label>
+                            <input type="number" id="profileWorkStart" min="0" max="23" value="9" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="profileWorkEnd">Work End Hour</label>
+                            <input type="number" id="profileWorkEnd" min="0" max="23" value="17" class="form-input">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profileEnergy">Preferred Energy Level</label>
+                        <select id="profileEnergy" class="form-input">
+                            <option value="3">Medium (3)</option>
+                            <option value="1">Very Low (1)</option>
+                            <option value="2">Low (2)</option>
+                            <option value="4">High (4)</option>
+                            <option value="5">Very High (5)</option>
+                        </select>
+                    </div>
+                    
+                    <div id="profileSetupError" class="error-message"></div>
+                    
+                    <button id="profileSetupBtn" class="btn btn-primary">Continue to Schedule Setup</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Setup Page -->
+        <div id="scheduleSetupPage" class="page">
+            <div class="setup-container">
+                <div class="setup-form">
+                    <h1>Set Up Your Fixed Schedule</h1>
+                    <p class="subtitle">Add your regular activities and commitments</p>
+                    
+                    <div class="progress-indicator">
+                        <div class="progress-step active">1</div>
+                        <div class="progress-line"></div>
+                        <div class="progress-step active">2</div>
+                        <div class="progress-line"></div>
+                        <div class="progress-step">3</div>
+                    </div>
+                    
+                    <div class="schedule-tabs">
+                        <button class="tab-btn active" data-day="0">Monday</button>
+                        <button class="tab-btn" data-day="1">Tuesday</button>
+                        <button class="tab-btn" data-day="2">Wednesday</button>
+                        <button class="tab-btn" data-day="3">Thursday</button>
+                        <button class="tab-btn" data-day="4">Friday</button>
+                        <button class="tab-btn" data-day="5">Saturday</button>
+                        <button class="tab-btn" data-day="6">Sunday</button>
+                    </div>
+                    
+                    <div id="scheduleContent" class="schedule-content"></div>
+                    
+                    <button id="addActivityBtn" class="btn btn-secondary">+ Add Activity</button>
+                    
+                    <div id="scheduleSetupError" class="error-message"></div>
+                    
+                    <button id="scheduleSetupBtn" class="btn btn-primary">Continue to Goals Setup</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals Setup Page -->
+        <div id="goalsSetupPage" class="page">
+            <div class="setup-container">
+                <div class="setup-form">
+                    <h1>Set Your Goals</h1>
+                    <p class="subtitle">Define your objectives to stay motivated</p>
+                    
+                    <div class="progress-indicator">
+                        <div class="progress-step active">1</div>
+                        <div class="progress-line"></div>
+                        <div class="progress-step active">2</div>
+                        <div class="progress-line"></div>
+                        <div class="progress-step active">3</div>
+                    </div>
+                    
+                    <div id="goalsContainer"></div>
+                    
+                    <button id="addGoalBtn" class="btn btn-secondary">+ Add Another Goal</button>
+                    
+                    <div id="goalsSetupError" class="error-message"></div>
+                    
+                    <button id="completeSetupBtn" class="btn btn-primary">Complete Setup & Start Using TaskSync</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page">
+            <div class="dashboard-container">
+                <nav class="top-navbar">
+                    <div class="navbar-left">
+                        <h2 class="navbar-logo">✨ TaskSync</h2>
+                    </div>
+                    <div class="navbar-right">
+                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
+                        <button class="nav-btn" onclick="switchToProfile()">👤 Profile</button>
+                        <button class="nav-btn" onclick="switchToSchedule()">📅 Schedule</button>
+                        <button class="nav-btn" onclick="switchToGoals()">🎯 Goals</button>
+                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
+                    </div>
+                </nav>
+                
+                <div class="dashboard-content">
+                    <h1>Welcome, <span id="dashboardUsername"></span>! 👋</h1>
+                    
+                    <div class="dashboard-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Total Tasks</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">In Progress</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                    
+                    <section class="section">
+                        <h2>📝 Create New Task</h2>
+                        <div class="task-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="taskTitle">Task Title</label>
+                                    <input type="text" id="taskTitle" placeholder="What do you need to do?" class="form-input">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="taskDescription">Description</label>
+                                    <textarea id="taskDescription" placeholder="Add details..." class="form-input" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="taskDate">Date</label>
+                                    <input type="date" id="taskDate" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="taskDuration">Duration (minutes)</label>
+                                    <input type="number" id="taskDuration" value="60" min="1" class="form-input">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="taskPriority">Priority</label>
+                                    <select id="taskPriority" class="form-input">
+                                        <option value="3">🟡 Medium</option>
+                                        <option value="5">🔴 High</option>
+                                        <option value="1">🟢 Low</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="taskCategory">Category</label>
+                                    <select id="taskCategory" class="form-input">
+                                        <option value="Work">Work</option>
+                                        <option value="Personal">Personal</option>
+                                        <option value="Health">Health</option>
+                                        <option value="Learning">Learning</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button id="createTaskBtn" class="btn btn-primary">✅ Schedule Task</button>
+                        </div>
+                    </section>
+                    
+                    <section class="section">
+                        <h2>📋 Your Tasks</h2>
+                        <div id="tasksList" class="tasks-list"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="profilePage" class="page">
+            <div class="dashboard-container">
+                <nav class="top-navbar">
+                    <div class="navbar-left">
+                        <h2 class="navbar-logo">✨ TaskSync</h2>
+                    </div>
+                    <div class="navbar-right">
+                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
+                        <button class="nav-btn" onclick="switchToProfile()">👤 Profile</button>
+                        <button class="nav-btn" onclick="switchToSchedule()">📅 Schedule</button>
+                        <button class="nav-btn" onclick="switchToGoals()">🎯 Goals</button>
+                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
+                    </div>
+                </nav>
+                
+                <div class="dashboard-content">
+                    <h1>Your Profile</h1>
+                    <div class="profile-container">
+                        <div class="profile-info">
+                            <h2 id="profileUsername"></h2>
+                            <p id="profileEmail"></p>
+                            <hr>
+                            <h3>About You</h3>
+                            <p id="profileBioDisplay"></p>
+                            <h3>Work Hours</h3>
+                            <p id="profileWorkHours"></p>
+                            <h3>Timezone</h3>
+                            <p id="profileTimezoneDisplay"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Page -->
+        <div id="schedulePage" class="page">
+            <div class="dashboard-container">
+                <nav class="top-navbar">
+                    <div class="navbar-left">
+                        <h2 class="navbar-logo">✨ TaskSync</h2>
+                    </div>
+                    <div class="navbar-right">
+                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
+                        <button class="nav-btn" onclick="switchToProfile()">👤 Profile</button>
+                        <button class="nav-btn" onclick="switchToSchedule()">📅 Schedule</button>
+                        <button class="nav-btn" onclick="switchToGoals()">🎯 Goals</button>
+                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
+                    </div>
+                </nav>
+                
+                <div class="dashboard-content">
+                    <h1>Your Fixed Schedule</h1>
+                    <div id="scheduleDisplay" class="schedule-display"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals Page -->
+        <div id="goalsPage" class="page">
+            <div class="dashboard-container">
+                <nav class="top-navbar">
+                    <div class="navbar-left">
+                        <h2 class="navbar-logo">✨ TaskSync</h2>
+                    </div>
+                    <div class="navbar-right">
+                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
+                        <button class="nav-btn" onclick="switchToProfile()">👤 Profile</button>
+                        <button class="nav-btn" onclick="switchToSchedule()">📅 Schedule</button>
+                        <button class="nav-btn" onclick="switchToGoals()">🎯 Goals</button>
+                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
+                    </div>
+                </nav>
+                
+                <div class="dashboard-content">
+                    <h1>🎯 Your Goals</h1>
+                    <div id="goalsDisplay" class="goals-display"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

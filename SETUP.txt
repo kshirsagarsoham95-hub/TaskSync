@@ -1,0 +1,266 @@
+╔═════════════════════════════════════════════════════════════════════════════╗
+║              TaskSync - MySQL Backend Setup Instructions                    ║
+║                       Complete Step-by-Step Guide                           ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+🎯 WHAT YOU'LL BUILD:
+═════════════════════════════════════════════════════════════════════════════════
+
+✅ Web App (HTML/CSS/JS) → http://localhost:3000
+✅ Node.js/Express Backend Server
+✅ MySQL Database for persistent storage
+✅ RESTful API for all operations
+
+═════════════════════════════════════════════════════════════════════════════════
+STEP 1: SETUP MySQL DATABASE
+═════════════════════════════════════════════════════════════════════════════════
+
+1. Open MySQL Command Line or MySQL Workbench
+2. Copy ALL content from: database.sql
+3. Paste and execute it in MySQL
+
+The script will:
+   ✓ Create database "tasksync_db"
+   ✓ Create all tables (users, profiles, schedules, goals, tasks)
+   ✓ Insert demo data for testing
+
+Expected output:
+   - Database created
+   - 5 tables created
+   - Rows inserted (users, schedules, goals, tasks)
+
+═════════════════════════════════════════════════════════════════════════════════
+STEP 2: INSTALL DEPENDENCIES
+═════════════════════════════════════════════════════════════════════════════════
+
+Open PowerShell/Terminal in TaskSync-Web folder:
+
+   cd G:\Chrome Downloads\COLLEGE ASSIGNMENTS\TaskSync-Web
+   npm install
+
+This installs:
+   - express (web framework)
+   - mysql2 (MySQL driver)
+   - dotenv (configuration)
+
+╔═════════════════════════════════════════════════════════════════════════════╗
+║ ⚠️ IMPORTANT CONFIGURATION                                                 ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+Edit the .env file (already created):
+
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=sohamsql32025        ← Your MySQL password
+   DB_NAME=tasksync_db
+   DB_PORT=3306
+   PORT=3000
+   NODE_ENV=development
+
+═════════════════════════════════════════════════════════════════════════════════
+STEP 3: START THE SERVER
+═════════════════════════════════════════════════════════════════════════════════
+
+In PowerShell/Terminal (in TaskSync-Web folder):
+
+   npm start
+
+You should see:
+
+   ╔════════════════════════════════════════════╗
+   ║   ✅ TaskSync Server Running!              ║
+   ╠════════════════════════════════════════════╣
+   ║  🌐 Server: http://localhost:3000         ║
+   ║  💾 Database: tasksync_db (MySQL)          ║
+   ║  ✅ MySQL Database Connected Successfully! ║
+   ✅ The .env file is already configured!
+   ✅ All dependencies are listed in package.json
+
+═════════════════════════════════════════════════════════════════════════════════
+STEP 4: OPEN YOUR APPLICATION
+═════════════════════════════════════════════════════════════════════════════════
+
+Open your browser and go to:
+
+   http://localhost:3000
+
+🎉 Your TaskSync application is now running!
+
+═════════════════════════════════════════════════════════════════════════════════
+USING THE APPLICATION
+═════════════════════════════════════════════════════════════════════════════════
+
+OPTION A: Use Demo Account
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Username: demo
+   Password: password123
+
+   This account already has:
+   ✓ Profile completed
+   ✓ Schedule configured (Monday-Friday)
+   ✓ Goals set
+   ✓ Sample tasks created
+
+OPTION B: Create New Account
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+   1. Click "Sign up"
+   2. Enter username and password
+   3. Follow the setup wizard:
+      → Complete Profile (bio, timezone, work hours)
+      → Set Schedule (add activities for each day)
+      → Set Goals (add 3+ goals with priorities)
+   4. Done! Start using the app
+
+═════════════════════════════════════════════════════════════════════════════════
+FEATURES YOU CAN USE
+═════════════════════════════════════════════════════════════════════════════════
+
+✅ User Authentication
+   • Sign up and login
+   • Secure password handling (Note: plaintext for demo - use hashing in production)
+
+✅ Profile Management
+   • Update bio and about you
+   • Set timezone
+   • Configure work hours
+
+✅ Schedule Management
+   • Create fixed weekly schedule
+   • Add activities for each day
+   • Set time ranges and categories
+
+✅ Goals Tracking
+   • Create personal goals
+   • Set priorities and target dates
+   • View all goals in dashboard
+
+✅ Task Management
+   • Create tasks with priority and category
+   • Set due dates and duration
+   • View all tasks in dashboard
+
+═════════════════════════════════════════════════════════════════════════════════
+API ENDPOINTS (Reference)
+═════════════════════════════════════════════════════════════════════════════════
+
+AUTHENTICATION:
+   POST   /api/auth/login              → Login user
+   POST   /api/auth/signup             → Create new account
+   GET    /api/auth/user/:userId/setup-status  → Check setup completion
+
+PROFILES:
+   GET    /api/profiles/:userId        → Get user profile
+   PUT    /api/profiles/:userId        → Update profile
+
+SCHEDULES:
+   GET    /api/schedules/:userId       → Get all schedules
+   POST   /api/schedules/:userId       → Create schedule
+   DELETE /api/schedules/:userId/:scheduleId → Delete schedule
+
+GOALS:
+   GET    /api/goals/:userId           → Get all goals
+   POST   /api/goals/:userId           → Create goal
+   PUT    /api/goals/:userId/:goalId   → Update goal
+   DELETE /api/goals/:userId/:goalId   → Delete goal
+
+TASKS:
+   GET    /api/tasks/:userId           → Get all tasks
+   POST   /api/tasks/:userId           → Create task
+   PUT    /api/tasks/:userId/:taskId   → Update task
+   DELETE /api/tasks/:userId/:taskId   → Delete task
+
+═════════════════════════════════════════════════════════════════════════════════
+PROJECT STRUCTURE
+═════════════════════════════════════════════════════════════════════════════════
+
+TaskSync-Web/
+├── server.js                    ← Main Express server
+├── .env                         ← Database credentials (already configured)
+├── .env.example                 ← Template for .env (for reference)
+├── package.json                 ← Dependencies list
+├── database.sql                 ← SQL schema and demo data
+│
+├── config/
+│   └── database.js              ← MySQL connection configuration
+│
+├── routes/
+│   └── api/
+│       ├── auth.js              ← Authentication endpoints
+│       ├── profiles.js          ← Profile endpoints
+│       ├── schedules.js         ← Schedule endpoints
+│       ├── goals.js             ← Goals endpoints
+│       └── tasks.js             ← Tasks endpoints
+│
+├── public/
+│   ├── index.html               ← Web application UI
+│   ├── styles.css               ← Dark green theme styling
+│   └── app.js                   ← Application logic (API integration)
+│
+├── README.md                    ← Full documentation
+├── QUICKSTART.txt               ← Quick start guide
+└── SETUP.txt                    ← This file
+
+═════════════════════════════════════════════════════════════════════════════════
+TROUBLESHOOTING
+═════════════════════════════════════════════════════════════════════════════════
+
+❌ Server won't start
+   ✓ Check if MySQL is running
+   ✓ Verify .env file has correct credentials
+   ✓ Make sure port 3000 is not in use
+   ✓ Run: netstat -ano | findstr :3000 (Windows)
+
+❌ Database connection error
+   ✓ Check MySQL username: root
+   ✓ Check MySQL password: sohamsql32025
+   ✓ Check database exists: tasksync_db
+   ✓ Run the database.sql script again
+   ✓ Verify MySQL is running: Services → MySQL80
+
+❌ Can't login
+   ✓ Use demo account first (username: demo, password: password123)
+   ✓ Check that database has user records
+   ✓ Verify backend server is running
+
+❌ Tasks not saving
+   ✓ Check browser console (F12) for errors
+   ✓ Check server console for API error messages
+   ✓ Verify database can be accessed
+
+═════════════════════════════════════════════════════════════════════════════════
+NEXT STEPS
+═════════════════════════════════════════════════════════════════════════════════
+
+1. ✅ Setup MySQL database (database.sql)
+2. ✅ Install dependencies (npm install)
+3. ✅ Configure .env file (already done!)
+4. ✅ Start server (npm start)
+5. 🌐 Open http://localhost:3000
+6. 📝 Create an account or use demo
+7. 🎉 Enjoy TaskSync!
+
+═════════════════════════════════════════════════════════════════════════════════
+SECURITY NOTES (Important for Production)
+═════════════════════════════════════════════════════════════════════════════════
+
+⚠️ THIS IS A DEVELOPMENT VERSION - DO NOT USE IN PRODUCTION
+
+Security improvements needed:
+   [ ] Hash passwords with bcrypt
+   [ ] Implement JWT authentication tokens
+   [ ] Add input validation and sanitization
+   [ ] Add HTTPS/SSL
+   [ ] Implement rate limiting
+   [ ] Add CORS configuration
+   [ ] Use environment variables for all secrets
+   [ ] Add request logging
+   [ ] Implement proper error handling
+   [ ] Add database connection pooling (already done)
+
+═════════════════════════════════════════════════════════════════════════════════
+
+✨ Your TaskSync application with MySQL backend is ready!
+
+Questions? Check README.md for detailed documentation.
+
+═════════════════════════════════════════════════════════════════════════════════

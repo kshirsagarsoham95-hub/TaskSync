@@ -1,0 +1,28 @@
+{
+  "name": "tasksync-web",
+  "version": "1.0.0",
+  "description": "TaskSync - A modern task management and scheduling web application with MySQL backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "task-management",
+    "scheduling",
+    "productivity",
+    "goals",
+    "todo"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

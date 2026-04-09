@@ -1,0 +1,163 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║              ⚡ TASKSYNC WEB APPLICATION - QUICK START GUIDE ⚡              ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+🎯 FASTEST WAY TO RUN (2 SECONDS):
+═══════════════════════════════════════════════════════════════════════════════
+
+1️⃣  Find this folder:
+    G:\Chrome Downloads\COLLEGE ASSIGNMENTS\TaskSync-Web\
+
+2️⃣  Double-click on:
+    📄 index.html
+
+3️⃣  Your browser opens → App is running! 🚀
+
+✅ That's it! No installation, no setup needed!
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📱 FIRST TIME SETUP:
+═══════════════════════════════════════════════════════════════════════════════
+
+When you open the app:
+
+1. Click 📝 "Sign Up" button
+2. Enter username and password (create new account)
+3. Follow the setup wizard:
+   ✓ Step 1: Complete your profile (bio, timezone, work hours)
+   ✓ Step 2: Create your weekly schedule (activities for each day)
+   ✓ Step 3: Set your goals (3+ goals with priority)
+4. Click "Complete Setup" → You're in! 🎉
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🔑 TEST LOGIN (skip signup):
+═══════════════════════════════════════════════════════════════════════════════
+
+If you want to test without signup:
+- Username: demo
+- Password: password123
+
+(Setup data already configured for demo account)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📊 USING THE APP:
+═══════════════════════════════════════════════════════════════════════════════
+
+Dashboard (Main Page):
+- Create new tasks with title, priority, category, duration
+- View all your tasks
+- See quick stats (total, in-progress, completed)
+
+Navigation Menu (Left Sidebar):
+📊 Dashboard   → Create and manage tasks
+👤 Profile    → View your profile info
+📅 Schedule   → See your fixed weekly schedule
+🎯 Goals      → View your personal goals
+🚪 Logout     → Exit and return to login
+
+═══════════════════════════════════════════════════════════════════════════════
+
+💾 HOW DATA IS SAVED:
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ All data saves automatically to your browser
+✓ Works offline - no internet needed!
+✓ Data persists when you close and reopen the browser
+✓ To clear all data: Clear browser cache/localStorage
+
+⚠️  WARNING: Using "Clear browsing data" will DELETE all your tasks!
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎨 UI FEATURES:
+═══════════════════════════════════════════════════════════════════════════════
+
+✨ Dark Theme     → Less strain on eyes
+🟢 Green Accent   → Modern, fresh looks
+📱 Responsive     → Works on phone/tablet/desktop
+⚡ Smooth Animations → Beautiful transitions
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🛠️  ADVANCED: RUN WITH NODE.JS SERVER (Optional):
+═══════════════════════════════════════════════════════════════════════════════
+
+If you have Node.js installed:
+
+1. Open Command Prompt in TaskSync-Web folder:
+   - Hold Shift + Right-click → "Open PowerShell window here"
+
+2. Run these commands:
+   npm install
+   npm start
+
+3. Open browser and go to:
+   http://localhost:3000
+
+Benefits:
+- Better for production setup
+- Proper file serving
+- Can add backend APIs later
+
+═══════════════════════════════════════════════════════════════════════════════
+
+❓ TROUBLESHOOTING:
+═══════════════════════════════════════════════════════════════════════════════
+
+Issue: Page won't load
+✓ Try different browser (Chrome, Firefox, Edge)
+✓ Clear browser cache (Ctrl+Shift+Delete)
+✓ Disable browser extensions
+
+Issue: Data not saving
+✓ Check if localStorage is enabled
+✓ Make sure you're not in "Private/Incognito" mode
+✓ Close other windows with the app open
+
+Issue: Buttons not working
+✓ Check browser console (F12)
+✓ Reload page (F5 or Ctrl+R)
+✓ Try a different browser
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 PROJECT FILES:
+═══════════════════════════════════════════════════════════════════════════════
+
+index.html    → 🌐 User Interface (forms, pages, layout)
+styles.css    → 🎨 Styling (colors, animations, responsive)
+app.js        → ⚙️  Application Logic (all functionality)
+server.js     → 🖥️  Optional Node.js server
+package.json  → 📦 Node.js dependencies
+README.md     → 📚 Full documentation
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎓 KEY FEATURES IMPLEMENTED:
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ User Authentication (signup/login)
+✅ Multi-step Onboarding (profile → schedule → goals)
+✅ Task Management (create, view, categorize)
+✅ Schedule Configuration (weekly activities)
+✅ Goals Tracking (with priority and deadlines)
+✅ Dark Theme UI (modern green design)
+✅ Data Persistence (localStorage)
+✅ Form Validation (error messages)
+✅ Responsive Design (mobile-friendly)
+✅ Smooth Animations (visual polish)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 YOU'RE ALL SET!
+
+Just open index.html in your browser and start organizing your tasks! 💪
+
+Need help? Check README.md for detailed documentation.
+
+Enjoy TaskSync! 🎉
+
+═══════════════════════════════════════════════════════════════════════════════
