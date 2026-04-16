@@ -1,0 +1,8 @@
+.view-toolbar { justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; }
+.ghost-btn { background: transparent; }
+.primary-btn { padding-inline: 18px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; }
+.section-heading h2, .section-heading h3, .form-header h2, .stat-card h3, .chart-card h3, .heatmap-card h3 { margin: 0; }
+.section-heading p, .stat-card p { margin: 6px 0 0; color: var(--muted); }
+.stat-value { font-size: 2.4rem; font-weight: 700; margin-top: 14px; }
+.canvas-legend { display: flex; gap: 12px; color: var(--muted); }

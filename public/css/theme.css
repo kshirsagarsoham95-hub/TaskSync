@@ -1,0 +1,24 @@
+body[data-theme="light"] {
+  --bg: #f8fafc;
+  --panel: rgba(255, 255, 255, 0.88);
+  --surface: rgba(255, 255, 255, 0.96);
+  --surface-alt: #f1f5f9;
+  --line: rgba(71, 85, 105, 0.14);
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+}
+body[data-theme="light"] {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.08), transparent 24%),
+    linear-gradient(180deg, #ffffff, #f8fafc 55%, #eef2ff);
+}
+body[data-theme="light"] #app-header {
+  background: rgba(255, 255, 255, 0.86);
+}

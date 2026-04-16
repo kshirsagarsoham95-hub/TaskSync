@@ -1,515 +1,310 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskSync - Task Management & Scheduling</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div id="app">
-        <!-- Login Page -->
-        <div id="loginPage" class="page active">
-            <div class="auth-container">
-                <div class="auth-form">
-                    <h1 class="logo">✨ TaskSync</h1>
-                    <p class="subtitle">Sign in to your account</p>
-                    
-                    <div class="form-group">
-                        <label for="loginUsername">Username</label>
-                        <input type="text" id="loginUsername" placeholder="Enter your username" class="form-input">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" placeholder="Enter your password" class="form-input">
-                    </div>
-                    
-                    <div id="loginError" class="error-message"></div>
-                    
-                    <button id="loginBtn" class="btn btn-primary">LOGIN</button>
-                    
-                    <div class="auth-footer">
-                        <p>Don't have an account? <a href="#" onclick="switchToSignup(event)">Sign up</a></p>
-                        <p style="margin-top: 15px; font-size: 12px;">Demo: username "demo" password "demo"</p>
-                    </div>
-                </div>
-            </div>
+    <title>TaskSync</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/kanban.css">
+    <link rel="stylesheet" href="/css/gantt.css">
+    <link rel="stylesheet" href="/css/analytics.css">
+  </head>
+  <body>
+    <div id="app-shell" hidden>
+      <header id="app-header">
+        <div class="header-left">
+          <h1 class="logo">
+            <span class="logo-icon">&#9889;</span>TaskSync
+          </h1>
         </div>
 
-        <!-- Signup Page -->
-        <div id="signupPage" class="page">
-            <div class="auth-container">
-                <div class="auth-form">
-                    <h1 class="logo">✨ TaskSync</h1>
-                    <p class="subtitle">Create your account</p>
-                    
-                    <div class="form-group">
-                        <label for="signupUsername">Username</label>
-                        <input type="text" id="signupUsername" placeholder="Choose a username" class="form-input">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="signupEmail">Email (Optional)</label>
-                        <input type="email" id="signupEmail" placeholder="Enter your email" class="form-input">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="signupPassword">Password</label>
-                        <input type="password" id="signupPassword" placeholder="Create a password" class="form-input">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="signupConfirmPassword">Confirm Password</label>
-                        <input type="password" id="signupConfirmPassword" placeholder="Confirm password" class="form-input">
-                    </div>
-                    
-                    <div id="signupError" class="error-message"></div>
-                    
-                    <button id="signupBtn" class="btn btn-primary">CREATE ACCOUNT</button>
-                    
-                    <div class="auth-footer">
-                        <p>Already have an account? <a href="#" onclick="switchToLogin(event)">Sign in</a></p>
-                    </div>
-                </div>
-            </div>
+        <nav class="header-nav">
+          <button data-view="table" class="nav-btn active" type="button">&#9776; Tasks</button>
+          <button data-view="kanban" class="nav-btn" type="button">&#9632; Kanban</button>
+          <button data-view="gantt" class="nav-btn" type="button">&#9998; Gantt</button>
+          <button data-view="analytics" class="nav-btn" type="button">&#9881; Analytics</button>
+          <button data-view="admin" class="nav-btn" id="nav-admin" hidden type="button">&#9881; Admin</button>
+        </nav>
+
+        <div class="header-right">
+          <div id="search-bar">
+            <span class="search-icon">&#128269;</span>
+            <input type="text" id="search-input" placeholder="Search tasks..." autocomplete="off">
+            <select id="status-filter">
+              <option value="ALL">All Status</option>
+              <option value="TODO">To Do</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="DONE">Done</option>
+            </select>
+            <input type="date" id="date-filter" title="Filter by scheduled date">
+            <button id="search-clear" type="button" title="Clear filters">&#10005;</button>
+          </div>
+          <button id="theme-toggle" type="button">Light</button>
+          <div class="user-badge">
+            <span id="current-user-name">Guest</span>
+            <span id="current-user-role" class="user-role-label"></span>
+          </div>
+          <button id="btn-logout" type="button" class="btn-logout">&#8594; Logout</button>
         </div>
+      </header>
 
-        <!-- Profile Setup Page -->
-        <div id="profileSetupPage" class="page">
-            <div class="setup-container">
-                <div class="setup-form">
-                    <h1>Complete Your Profile</h1>
-                    <p class="subtitle">Tell us about yourself to personalize your experience</p>
-                    
-                    <div class="progress-indicator">
-                        <div class="progress-step active">1</div>
-                        <div class="progress-line"></div>
-                        <div class="progress-step">2</div>
-                        <div class="progress-line"></div>
-                        <div class="progress-step">3</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="profileBio">About You (Optional)</label>
-                        <textarea id="profileBio" placeholder="Tell us about yourself..." class="form-input" rows="4"></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="profileTimezone">Timezone</label>
-                        <select id="profileTimezone" class="form-input">
-                            <option value="UTC">UTC</option>
-                            <option value="UTC+5:30">UTC+5:30 (India)</option>
-                            <option value="UTC+8">UTC+8 (Singapore)</option>
-                            <option value="UTC-5">UTC-5 (EST)</option>
-                            <option value="UTC-8">UTC-8 (PST)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="profileWorkStart">Work Start (HH:MM)</label>
-                            <input type="time" id="profileWorkStart" value="09:00" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label for="profileWorkEnd">Work End (HH:MM)</label>
-                            <input type="time" id="profileWorkEnd" value="17:00" class="form-input">
-                        </div>
-                    </div>
-                    
-                    <div id="profileSetupError" class="error-message"></div>
-                    
-                    <button id="profileSetupBtn" class="btn btn-primary">Continue to Schedule Setup</button>
-                </div>
+      <div id="toast-container"></div>
+
+      <main id="app-main">
+        <section id="view-table" class="view active">
+          <div class="view-toolbar">
+            <div class="toolbar-left">
+              <button id="btn-new-task" type="button" class="btn-primary-action">&#43; New Task</button>
+              <button id="btn-from-template" type="button">&#128203; Template</button>
+              <button id="btn-mark-complete" type="button">&#10003; Complete</button>
+              <button id="btn-mark-incomplete" type="button">&#8635; Incomplete</button>
+              <button id="btn-reschedule" type="button">&#128197; Reschedule</button>
             </div>
-        </div>
-
-        <!-- Schedule Setup Page -->
-        <div id="scheduleSetupPage" class="page">
-            <div class="setup-container">
-                <div class="setup-form">
-                    <h1>Set Up Your Fixed Schedule</h1>
-                    <p class="subtitle">Add your regular activities and commitments</p>
-                    
-                    <div class="progress-indicator">
-                        <div class="progress-step active">1</div>
-                        <div class="progress-line"></div>
-                        <div class="progress-step active">2</div>
-                        <div class="progress-line"></div>
-                        <div class="progress-step">3</div>
-                    </div>
-                    
-                    <div class="schedule-tabs">
-                        <button class="tab-btn active" data-day="0">Monday</button>
-                        <button class="tab-btn" data-day="1">Tuesday</button>
-                        <button class="tab-btn" data-day="2">Wednesday</button>
-                        <button class="tab-btn" data-day="3">Thursday</button>
-                        <button class="tab-btn" data-day="4">Friday</button>
-                        <button class="tab-btn" data-day="5">Saturday</button>
-                        <button class="tab-btn" data-day="6">Sunday</button>
-                    </div>
-                    
-                    <div id="scheduleContent" class="schedule-content"></div>
-                    
-                    <button id="addActivityBtn" class="btn btn-secondary">+ Add Activity</button>
-                    
-                    <div id="scheduleSetupError" class="error-message"></div>
-                    
-                    <button id="scheduleSetupBtn" class="btn btn-primary">Continue to Goals Setup</button>
-                </div>
+            <div class="toolbar-right">
+              <button id="btn-generate-recurring" type="button">&#8635; Recurring</button>
+              <button id="btn-export-csv" type="button">&#8681; CSV</button>
+              <button id="btn-export-pdf" type="button">&#8681; PDF</button>
+              <label class="btn toolbar-file-btn">
+                &#8679; Import
+                <input type="file" id="csv-file-input" accept=".csv" hidden>
+              </label>
             </div>
-        </div>
+          </div>
 
-        <!-- Goals Setup Page -->
-        <div id="goalsSetupPage" class="page">
-            <div class="setup-container">
-                <div class="setup-form">
-                    <h1>Set Your Goals</h1>
-                    <p class="subtitle">Define your objectives to stay motivated</p>
-                    
-                    <div class="progress-indicator">
-                        <div class="progress-step active">1</div>
-                        <div class="progress-line"></div>
-                        <div class="progress-step active">2</div>
-                        <div class="progress-line"></div>
-                        <div class="progress-step active">3</div>
-                    </div>
-                    
-                    <div id="goalsContainer"></div>
-                    
-                    <button id="addGoalBtn" class="btn btn-secondary">+ Add Another Goal</button>
-                    
-                    <div id="goalsSetupError" class="error-message"></div>
-                    
-                    <button id="completeSetupBtn" class="btn btn-primary">Complete Setup & Start Using TaskSync</button>
-                </div>
+          <div class="table-wrapper card">
+            <table id="task-table">
+              <thead>
+                <tr>
+                  <th class="col-check"><input type="checkbox" id="select-all" title="Select all"></th>
+                  <th class="col-title">Title</th>
+                  <th class="col-status">Status</th>
+                  <th class="col-score">Score</th>
+                  <th class="col-tags">Tags</th>
+                  <th class="col-deadline">Deadline</th>
+                  <th class="col-scheduled">Scheduled</th>
+                  <th class="col-energy">Energy</th>
+                  <th class="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="view-kanban" class="view">
+          <div class="board-grid">
+            <div class="kanban-column" data-status="TODO">
+              <div class="column-header">
+                <span class="column-dot dot-todo"></span>
+                <h2>To Do</h2>
+                <span class="column-count" data-count="TODO">0</span>
+              </div>
+              <div class="kanban-list" data-dropzone="TODO"></div>
+              <button class="kanban-add-btn" data-add="TODO" type="button">&#43; Add task</button>
             </div>
-        </div>
-
-        <!-- Dashboard Page -->
-        <div id="dashboardPage" class="page">
-            <div class="dashboard-container">
-                <nav class="top-navbar">
-                    <div class="navbar-left">
-                        <h2 class="navbar-logo">✨ TaskSync</h2>
-                    </div>
-                    <div class="navbar-right">
-                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
-                        <button class="nav-btn" onclick="switchToProfile()">👤 Profile</button>
-                        <button class="nav-btn" onclick="switchToSchedule()">📅 Schedule</button>
-                        <button class="nav-btn" onclick="switchToGoals()">🎯 Goals</button>
-                        <button class="nav-btn" onclick="switchToTracking()">✅ Track</button>
-                        <button class="nav-btn" onclick="switchToReports()">📈 Reports</button>
-                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
-                    </div>
-                </nav>
-                
-                <div class="dashboard-content">
-                    <h1>Welcome, <span id="dashboardUsername"></span>! 👋</h1>
-                    
-                    <div class="dashboard-grid">
-                        <div class="stat-card">
-                            <div class="stat-value" id="totalTasks">0</div>
-                            <div class="stat-label">Total Tasks</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="inProgressTasks">0</div>
-                            <div class="stat-label">In Progress</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="completedTasks">0</div>
-                            <div class="stat-label">Completed</div>
-                        </div>
-                    </div>
-                    
-                    <section class="section">
-                        <h2>📝 Create New Task</h2>
-                        <div class="task-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="taskTitle">Task Title</label>
-                                    <input type="text" id="taskTitle" placeholder="What do you need to do?" class="form-input">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="taskDescription">Description</label>
-                                    <textarea id="taskDescription" placeholder="Add details..." class="form-input" rows="3"></textarea>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="taskDate">Due Date *</label>
-                                    <input type="date" id="taskDate" class="form-input" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="taskDuration">Duration (minutes) *</label>
-                                    <input type="number" id="taskDuration" value="60" min="1" class="form-input" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Repeat on Days (Optional)</label>
-                                    <div class="days-selector">
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" name="taskDays" value="Monday"> Mon
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" name="taskDays" value="Tuesday"> Tue
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" name="taskDays" value="Wednesday"> Wed
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" name="taskDays" value="Thursday"> Thu
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" name="taskDays" value="Friday"> Fri
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" name="taskDays" value="Saturday"> Sat
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" name="taskDays" value="Sunday"> Sun
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="taskPriority">Priority</label>
-                                    <select id="taskPriority" class="form-input">
-                                        <option value="medium">🟡 Medium</option>
-                                        <option value="high">🔴 High</option>
-                                        <option value="low">🟢 Low</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="taskCategory">Category</label>
-                                    <select id="taskCategory" class="form-input">
-                                        <option value="Work">Work</option>
-                                        <option value="Personal">Personal</option>
-                                        <option value="Health">Health</option>
-                                        <option value="Learning">Learning</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="taskStatus">Status</label>
-                                    <select id="taskStatus" class="form-input">
-                                        <option value="pending">Pending</option>
-                                        <option value="in-progress">In Progress</option>
-                                        <option value="completed">Completed</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="task-form-buttons">
-                                <button id="createTaskBtn" class="btn btn-primary">✅ Create Task</button>
-                                <button id="cancelTaskEditBtn" class="btn btn-secondary btn-small" style="display:none;">Cancel Edit</button>
-                            </div>
-                        </div>
-                    </section>
-                    
-                    <section class="section">
-                        <h2>📋 Your Tasks</h2>
-                        <div id="tasksList" class="tasks-list"></div>
-                    </section>
-                </div>
+            <div class="kanban-column" data-status="IN_PROGRESS">
+              <div class="column-header">
+                <span class="column-dot dot-in-progress"></span>
+                <h2>In Progress</h2>
+                <span class="column-count" data-count="IN_PROGRESS">0</span>
+              </div>
+              <div class="kanban-list" data-dropzone="IN_PROGRESS"></div>
+              <button class="kanban-add-btn" data-add="IN_PROGRESS" type="button">&#43; Add task</button>
             </div>
-        </div>
-
-        <!-- Profile Page -->
-        <div id="profilePage" class="page">
-            <div class="dashboard-container">
-                <nav class="top-navbar">
-                    <div class="navbar-left">
-                        <h2 class="navbar-logo">✨ TaskSync</h2>
-                    </div>
-                    <div class="navbar-right">
-                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
-                        <button class="nav-btn" onclick="switchToProfile()">👤 Profile</button>
-                        <button class="nav-btn" onclick="switchToSchedule()">📅 Schedule</button>
-                        <button class="nav-btn" onclick="switchToGoals()">🎯 Goals</button>
-                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
-                    </div>
-                </nav>
-                
-                <div class="dashboard-content">
-                    <h1>Your Profile</h1>
-                    <div class="profile-container">
-                        <div class="profile-info">
-                            <h2 id="profileUsername"></h2>
-                            <p id="profileEmail"></p>
-                            <hr style="border-color: var(--border-color); margin: 20px 0;">
-                            <h3>About You</h3>
-                            <p id="profileBioDisplay"></p>
-                            <h3>Work Hours</h3>
-                            <p id="profileWorkHours"></p>
-                            <h3>Timezone</h3>
-                            <p id="profileTimezoneDisplay"></p>
-                        </div>
-                    </div>
-                </div>
+            <div class="kanban-column" data-status="DONE">
+              <div class="column-header">
+                <span class="column-dot dot-done"></span>
+                <h2>Done</h2>
+                <span class="column-count" data-count="DONE">0</span>
+              </div>
+              <div class="kanban-list" data-dropzone="DONE"></div>
+              <button class="kanban-add-btn" data-add="DONE" type="button">&#43; Add task</button>
             </div>
-        </div>
+          </div>
+        </section>
 
-        <!-- Schedule Page -->
-        <div id="schedulePage" class="page">
-            <div class="dashboard-container">
-                <nav class="top-navbar">
-                    <div class="navbar-left">
-                        <h2 class="navbar-logo">✨ TaskSync</h2>
-                    </div>
-                    <div class="navbar-right">
-                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
-                        <button class="nav-btn" onclick="switchToProfile()">👤 Profile</button>
-                        <button class="nav-btn" onclick="switchToSchedule()">📅 Schedule</button>
-                        <button class="nav-btn" onclick="switchToGoals()">🎯 Goals</button>
-                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
-                    </div>
-                </nav>
-                
-                <div class="dashboard-content">
-                    <h1>Your Fixed Schedule</h1>
-                    <div id="scheduleDisplay" class="schedule-display"></div>
-                </div>
+        <section id="view-gantt" class="view">
+          <div class="card gantt-card">
+            <div class="gantt-toolbar">
+              <div class="section-heading">
+                <h2>Schedule Timeline</h2>
+                <p>Tasks plotted by scheduled date. Showing 14 days.</p>
+              </div>
+              <div class="gantt-controls">
+                <button id="gantt-prev" type="button">&#8592; Prev</button>
+                <span id="gantt-range-label" class="gantt-range"></span>
+                <button id="gantt-next" type="button">Next &#8594;</button>
+              </div>
             </div>
-        </div>
-
-        <!-- Goals Page -->
-        <div id="goalsPage" class="page">
-            <div class="dashboard-container">
-                <nav class="top-navbar">
-                    <div class="navbar-left">
-                        <h2 class="navbar-logo">✨ TaskSync</h2>
-                    </div>
-                    <div class="navbar-right">
-                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
-                        <button class="nav-btn" onclick="switchToProfile()">👤 Profile</button>
-                        <button class="nav-btn" onclick="switchToSchedule()">📅 Schedule</button>
-                        <button class="nav-btn" onclick="switchToGoals()">🎯 Goals</button>
-                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
-                    </div>
-                </nav>
-                
-                <div class="dashboard-content">
-                    <h1>🎯 Your Goals</h1>
-                    <div id="goalsDisplay" class="goals-display"></div>
-                </div>
+            <div class="gantt-scroll-wrap">
+              <canvas id="gantt-canvas"></canvas>
             </div>
-        </div>
+          </div>
+        </section>
 
-        <!-- Task Tracking Page -->
-        <div id="trackingPage" class="page">
-            <div class="dashboard-container">
-                <nav class="top-navbar">
-                    <div class="navbar-left">
-                        <h2 class="navbar-logo">✨ TaskSync</h2>
-                    </div>
-                    <div class="navbar-right">
-                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
-                        <button class="nav-btn" onclick="switchToTracking()">✅ Track Tasks</button>
-                        <button class="nav-btn" onclick="switchToReports()">📈 Reports</button>
-                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
-                    </div>
-                </nav>
-                
-                <div class="dashboard-content">
-                    <h1>✅ Daily Task Completion Tracker</h1>
-                    <p style="color: var(--text-secondary); margin-bottom: 20px;">Mark your daily and scheduled work tasks as completed to earn points and track progress</p>
-                    
-                    <div class="tracking-header">
-                        <div class="date-selector">
-                            <input type="date" id="trackingDate" class="form-input">
-                            <button class="btn btn-secondary" onclick="loadTodaysTasks()">Load</button>
-                        </div>
-                        <div class="tracking-stats">
-                            <div class="stat-card">
-                                <div class="stat-value" id="pointsToday">0</div>
-                                <div class="stat-label">Points Today</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="completedToday">0</div>
-                                <div class="stat-label">Completed</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="totalPoints">0</div>
-                                <div class="stat-label">Total Points</div>
-                            </div>
-                        </div>
-                    </div>
+        <section id="view-analytics" class="view">
+          <div class="analytics-grid">
+            <article class="card stat-card">
+              <div class="stat-icon">&#127919;</div>
+              <h3>Execution Score</h3>
+              <div id="stat-hit-rate" class="stat-value">--</div>
+              <p id="stat-completed">0 completed</p>
+            </article>
+            <article class="card stat-card">
+              <div class="stat-icon">&#128203;</div>
+              <h3>Total Tasks</h3>
+              <div id="stat-total-tasks" class="stat-value">--</div>
+              <p>Live tasks excluding templates</p>
+            </article>
+            <article class="card stat-card">
+              <div class="stat-icon">&#9889;</div>
+              <h3>Avg Priority Score</h3>
+              <div id="stat-avg-score" class="stat-value">--</div>
+              <p>Weighted urgency index</p>
+            </article>
+            <article class="card stat-card">
+              <div class="stat-icon">&#128197;</div>
+              <h3>Overdue Tasks</h3>
+              <div id="stat-overdue" class="stat-value">--</div>
+              <p>Past deadline, not done</p>
+            </article>
+            <article class="card chart-card">
+              <h3>Weekly Plan vs Done</h3>
+              <canvas id="weekly-chart" height="260"></canvas>
+            </article>
+            <article class="card chart-card">
+              <h3>Completion Trend</h3>
+              <canvas id="trend-chart" height="260"></canvas>
+            </article>
+            <article class="card heatmap-card">
+              <h3>Energy Heatmap</h3>
+              <canvas id="heatmap-chart" height="200"></canvas>
+            </article>
+          </div>
+        </section>
 
-                    <section class="section">
-                        <h2>📋 Today's Tasks</h2>
-                        <div id="todayTasksList" class="tasks-list"></div>
-                        <div id="completedTasksSummary" class="completed-summary" style="display: none;">
-                            <h3>🎉 Completed Tasks Summary</h3>
-                            <div id="completedTasksList" class="completed-tasks-list"></div>
-                        </div>
-                    </section>
-                </div>
-            </div>
-        </div>
-
-        <!-- Weekly Report Page -->
-        <div id="reportsPage" class="page">
-            <div class="dashboard-container">
-                <nav class="top-navbar">
-                    <div class="navbar-left">
-                        <h2 class="navbar-logo">✨ TaskSync</h2>
-                    </div>
-                    <div class="navbar-right">
-                        <button class="nav-btn" onclick="switchToDashboard()">📊 Dashboard</button>
-                        <button class="nav-btn" onclick="switchToTracking()">✅ Track Tasks</button>
-                        <button class="nav-btn" onclick="switchToReports()">📈 Reports</button>
-                        <button class="nav-btn" onclick="logout()">🚪 Logout</button>
-                    </div>
-                </nav>
-                
-                <div class="dashboard-content">
-                    <h1>📈 Weekly Report</h1>
-                    
-                    <div class="report-selector">
-                        <label for="reportWeek">Select Week:</label>
-                        <input type="date" id="reportWeek" class="form-input">
-                        <button class="btn btn-secondary" onclick="loadWeeklyReport()">Load Report</button>
-                    </div>
-
-                    <div class="report-overview">
-                        <div class="stat-card">
-                            <div class="stat-value" id="weekCompletedTasks">0</div>
-                            <div class="stat-label">Tasks Completed</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="weekPointsEarned">0</div>
-                            <div class="stat-label">Points Earned</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="weekStreak">0</div>
-                            <div class="stat-label">Day Streak</div>
-                        </div>
-                    </div>
-
-                    <section class="section">
-                        <h2>📊 Week Summary</h2>
-                        <div id="weeklyReportDetails" class="report-details"></div>
-                    </section>
-
-                    <section class="section">
-                        <h2>📈 Goal Completion Progress</h2>
-                        <div id="goalProgressChart" class="goal-chart">
-                            <div class="chart-placeholder">
-                                <p>Goal progress visualization will appear here</p>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </div>
-        </div>
+        <section id="view-admin" class="view">
+          <div id="admin-root" class="analytics-grid"></div>
+        </section>
+      </main>
     </div>
 
-    <script src="app.js"></script>
-</body>
+    <div id="modal-root" class="modal-shell hidden">
+      <div class="modal-backdrop" data-modal-close></div>
+      <div class="modal-panel">
+        <button class="modal-close" type="button" data-modal-close title="Close">&#10005;</button>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+
+    <template id="task-form-template">
+      <form id="task-form" class="task-form" novalidate>
+        <div class="form-header">
+          <div>
+            <p class="eyebrow">Task Studio</p>
+            <h2 id="task-form-title">New Task</h2>
+          </div>
+          <label class="template-toggle">
+            <input type="checkbox" id="task-is-template">
+            <span>Save as template</span>
+          </label>
+        </div>
+        <div class="form-grid">
+          <label class="full-width">
+            <span>Title <em class="required">*</em></span>
+            <input type="text" name="title" required placeholder="What needs to be done?">
+          </label>
+          <label>
+            <span>Template name</span>
+            <input type="text" name="template_name" placeholder="Optional label">
+          </label>
+          <label>
+            <span>Status</span>
+            <select name="status">
+              <option value="TODO">To Do</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="DONE">Done</option>
+            </select>
+          </label>
+          <label class="full-width">
+            <span>Description</span>
+            <textarea name="description" rows="2" placeholder="Optional context..."></textarea>
+          </label>
+          <label>
+            <span>Deadline</span>
+            <input type="date" name="deadline">
+          </label>
+          <label>
+            <span>Scheduled date</span>
+            <input type="date" name="scheduled_date">
+          </label>
+          <label>
+            <span>Estimated minutes</span>
+            <input type="number" name="estimated_minutes" min="1" value="60">
+          </label>
+          <label>
+            <span>Buffer minutes</span>
+            <input type="number" name="buffer_minutes" min="0" value="0">
+          </label>
+          <label>
+            <span>Priority <strong id="priority-display">3</strong></span>
+            <input type="range" name="priority" min="1" max="5" value="3" oninput="document.getElementById('priority-display').textContent = this.value">
+          </label>
+          <label>
+            <span>Energy level</span>
+            <select name="energy_level">
+              <option value="1">Low</option>
+              <option value="2" selected>Medium</option>
+              <option value="3">High</option>
+            </select>
+          </label>
+          <label>
+            <span>Recurrence</span>
+            <select name="recurrence">
+              <option value="NONE">None</option>
+              <option value="DAILY">Daily</option>
+              <option value="WEEKLY">Weekly</option>
+              <option value="MONTHLY">Monthly</option>
+            </select>
+          </label>
+          <label class="full-width">
+            <span>Notes</span>
+            <textarea name="notes" rows="2" placeholder="Private notes, links, context..."></textarea>
+          </label>
+        </div>
+        <section class="form-section">
+          <div class="section-heading">
+            <h3>Tags</h3>
+            <p>Press Enter or comma to add.</p>
+          </div>
+          <div id="tag-editor"></div>
+        </section>
+        <section class="form-section">
+          <div class="section-heading">
+            <h3>Subtasks</h3>
+            <button type="button" id="btn-add-subtask" class="ghost-btn">&#43; Add subtask</button>
+          </div>
+          <div id="subtask-editor"></div>
+        </section>
+        <section class="form-section">
+          <div class="section-heading">
+            <h3>Attachments</h3>
+            <button type="button" id="btn-add-attachment" class="ghost-btn">&#43; Add link</button>
+          </div>
+          <div id="attachment-editor"></div>
+        </section>
+        <div class="form-actions">
+          <button type="button" class="ghost-btn" data-modal-close>Cancel</button>
+          <button type="submit" class="primary-btn">Save Task</button>
+        </div>
+      </form>
+    </template>
+
+    <script type="module" src="/js/app.js"></script>
+  </body>
 </html>
