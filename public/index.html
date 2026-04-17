@@ -24,11 +24,14 @@
         </div>
 
         <nav class="header-nav">
-          <button data-view="table" class="nav-btn active" type="button">&#9776; Tasks</button>
-          <button data-view="kanban" class="nav-btn" type="button">&#9632; Kanban</button>
-          <button data-view="gantt" class="nav-btn" type="button">&#9998; Gantt</button>
-          <button data-view="analytics" class="nav-btn" type="button">&#9881; Analytics</button>
-          <button data-view="admin" class="nav-btn" id="nav-admin" hidden type="button">&#9881; Admin</button>
+          <a href="/?view=table" class="nav-btn active" id="nav-table">&#9776; Tasks</a>
+          <a href="/?view=kanban" target="_blank" class="nav-btn" id="nav-kanban">&#9632; Kanban</a>
+          <a href="/?view=gantt" target="_blank" class="nav-btn" id="nav-gantt">&#9998; Gantt</a>
+          <a href="/?view=daily" target="_blank" class="nav-btn" id="nav-daily">&#9728; Daily</a>
+          <a href="/?view=weekly" target="_blank" class="nav-btn" id="nav-weekly">&#128197; Weekly</a>
+          <a href="/?view=monthly" target="_blank" class="nav-btn" id="nav-monthly">&#128198; Monthly</a>
+          <a href="/?view=analytics" class="nav-btn" id="nav-analytics">&#9881; Analytics</a>
+          <a href="/?view=admin" class="nav-btn" id="nav-admin" hidden>&#9881; Admin</a>
         </nav>
 
         <div class="header-right">
@@ -45,7 +48,7 @@
             <button id="search-clear" type="button" title="Clear filters">&#10005;</button>
           </div>
           <button id="theme-toggle" type="button">Light</button>
-          <div class="user-badge">
+          <div class="user-badge" id="btn-profile" style="cursor: pointer;" title="Profile & Settings">
             <span id="current-user-name">Guest</span>
             <span id="current-user-role" class="user-role-label"></span>
           </div>
@@ -190,6 +193,25 @@
 
         <section id="view-admin" class="view">
           <div id="admin-root" class="analytics-grid"></div>
+        </section>
+
+        <section id="view-profile" class="view">
+          <div class="card stat-card" style="max-width: 500px; margin: 0 auto; text-align: left;">
+            <h2>Profile & Settings</h2>
+            <form id="profile-form" class="task-form" style="margin-top: 20px;">
+              <label class="full-width">
+                <span>Display Name</span>
+                <input type="text" name="display_name" id="profile-display-name">
+              </label>
+              <label class="full-width" style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" name="recommendation_setting" id="profile-recommendation" style="width: auto;">
+                <span>Enable AI Recommendations (Demo Feature)</span>
+              </label>
+              <div class="form-actions" style="margin-top: 20px;">
+                <button type="submit" class="primary-btn">Save Settings</button>
+              </div>
+            </form>
+          </div>
         </section>
       </main>
     </div>

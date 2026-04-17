@@ -44,6 +44,7 @@ const schemaStatements = [
     password_hash TEXT NOT NULL,
     display_name TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'USER',
+    recommendation_setting INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS tasks (
@@ -133,6 +134,14 @@ function ensureSchema(database) {
 
   try {
     database.exec('ALTER TABLE subtasks ADD COLUMN sort_order INTEGER DEFAULT 0');
+  } catch (error) {
+    if (!String(error.message).toLowerCase().includes('duplicate column')) {
+      throw error;
+    }
+  }
+
+  try {
+    database.exec('ALTER TABLE users ADD COLUMN recommendation_setting INTEGER DEFAULT 1');
   } catch (error) {
     if (!String(error.message).toLowerCase().includes('duplicate column')) {
       throw error;
@@ -239,16 +248,45 @@ function sanitizeUser(user) {
     username: user.username,
     display_name: user.display_name,
     role: user.role,
+    recommendation_setting: user.recommendation_setting ?? 1,
     created_at: user.created_at
   };
 }
 
 function getUserById(userId) {
   return sanitizeUser(db.prepare(`
-    SELECT id, username, display_name, role, created_at
+    SELECT id, username, display_name, role, recommendation_setting, created_at
     FROM users
     WHERE id = ?
   `).get(userId));
+}
+
+function registerUser(username, password, displayName) {
+  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(String(username).trim());
+  if (existing) {
+    throw new Error('Username already exists');
+  }
+
+  const insertUser = db.prepare(`
+    INSERT INTO users (username, password_hash, display_name, role)
+    VALUES (?, ?, ?, 'USER')
+  `);
+  
+  const result = insertUser.run(
+    String(username).trim(),
+    hashPassword(password),
+    String(displayName || username).trim()
+  );
+  
+  return getUserById(result.lastInsertRowid);
+}
+
+function updateUserSettings(userId, recommendationSetting) {
+  db.prepare('UPDATE users SET recommendation_setting = ? WHERE id = ?').run(
+    recommendationSetting ? 1 : 0,
+    userId
+  );
+  return getUserById(userId);
 }
 
 function authenticateUser(username, password) {
@@ -270,6 +308,8 @@ db.computePriorityScore = computePriorityScore;
 db.normalizeTaskPayload = normalizeTaskPayload;
 db.hashPassword = hashPassword;
 db.getUserById = getUserById;
+db.registerUser = registerUser;
+db.updateUserSettings = updateUserSettings;
 db.authenticateUser = authenticateUser;
 db.sanitizeUser = sanitizeUser;
 

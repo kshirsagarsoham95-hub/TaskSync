@@ -58,13 +58,36 @@
       .auth-hint {
         font-size: 0.92rem;
       }
+
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .tab-btn {
+        flex: 1;
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+        padding: 8px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .tab-btn.active {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.4);
+      }
     </style>
   </head>
   <body>
     <div class="auth-card">
-      <p class="eyebrow">Welcome back</p>
+      <p class="eyebrow">Welcome to</p>
       <h1>&#9889; TaskSync</h1>
-      <p>Sign in to manage your tasks.</p>
+      
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-login">Login</button>
+        <button class="tab-btn" id="tab-register">Register</button>
+      </div>
 
       <form id="login-form" class="auth-form" novalidate>
         <label>
@@ -76,38 +99,76 @@
           <input type="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
         </label>
         <button type="submit" class="primary-btn">Log In</button>
+        <p class="auth-hint">Default accounts: <strong>demo / demo123</strong> and <strong>admin / admin123</strong></p>
+      </form>
+
+      <form id="register-form" class="auth-form" style="display: none;" novalidate>
+        <label>
+          <span>Username</span>
+          <input type="text" name="username" placeholder="Choose a username" autocomplete="username" required>
+        </label>
+        <label>
+          <span>Display Name</span>
+          <input type="text" name="display_name" placeholder="How should we call you?">
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" placeholder="Choose a password" autocomplete="new-password" required>
+        </label>
+        <button type="submit" class="primary-btn">Register</button>
       </form>
 
       <p id="login-feedback"></p>
-      <p class="auth-hint">Default accounts: <strong>demo / demo123</strong> and <strong>admin / admin123</strong></p>
     </div>
 
     <script type="module">
       import { api } from '/js/api.js';
 
-      const form = document.getElementById('login-form');
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
       const feedback = document.getElementById('login-feedback');
+      const tabLogin = document.getElementById('tab-login');
+      const tabRegister = document.getElementById('tab-register');
 
-      form.addEventListener('submit', async (event) => {
+      tabLogin.addEventListener('click', () => {
+        tabLogin.classList.add('active');
+        tabRegister.classList.remove('active');
+        loginForm.style.display = 'grid';
+        registerForm.style.display = 'none';
+        feedback.textContent = '';
+      });
+
+      tabRegister.addEventListener('click', () => {
+        tabRegister.classList.add('active');
+        tabLogin.classList.remove('active');
+        registerForm.style.display = 'grid';
+        loginForm.style.display = 'none';
+        feedback.textContent = '';
+      });
+
+      async function handleAuth(event, isLogin) {
         event.preventDefault();
         feedback.textContent = '';
-
+        const form = event.target;
         const button = form.querySelector('button');
         button.disabled = true;
-        button.textContent = 'Logging in...';
+        button.textContent = isLogin ? 'Logging in...' : 'Registering...';
 
         try {
           const payload = Object.fromEntries(new FormData(form).entries());
-          const result = await api.login(payload);
+          const result = isLogin ? await api.login(payload) : await api.register(payload);
           localStorage.setItem('tasksync-user', JSON.stringify(result.user));
           window.location.href = '/index.html';
         } catch (error) {
-          feedback.textContent = error.message || 'Login failed';
+          feedback.textContent = error.message || (isLogin ? 'Login failed' : 'Registration failed');
         } finally {
           button.disabled = false;
-          button.textContent = 'Log In';
+          button.textContent = isLogin ? 'Log In' : 'Register';
         }
-      });
+      }
+
+      loginForm.addEventListener('submit', (e) => handleAuth(e, true));
+      registerForm.addEventListener('submit', (e) => handleAuth(e, false));
     </script>
   </body>
 </html>

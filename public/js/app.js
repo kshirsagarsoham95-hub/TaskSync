@@ -18,10 +18,11 @@ const AUTH_KEY = 'tasksync-user';
 const state = {
   user: null,
   tasks: [],
-  filters: { search: '', status: 'ALL', date: '' },
+  filters: { search: '', status: 'ALL', date: '', recurrence: 'ALL' },
   analytics: { weekly: [], heatmap: [], stats: {} },
   admin: { overview: null, users: [] },
-  busy: false
+  busy: false,
+  currentView: 'table'
 };
 
 function setBusy(value) {
@@ -75,7 +76,8 @@ function filteredTasks() {
     const matchesSearch = !search || haystack.includes(search);
     const matchesStatus = state.filters.status === 'ALL' || task.status === state.filters.status;
     const matchesDate = !state.filters.date || task.scheduled_date === state.filters.date || task.deadline === state.filters.date;
-    return matchesSearch && matchesStatus && matchesDate;
+    const matchesRecurrence = state.filters.recurrence === 'ALL' || task.recurrence === state.filters.recurrence;
+    return matchesSearch && matchesStatus && matchesDate && matchesRecurrence;
   });
 }
 
@@ -176,21 +178,42 @@ async function bulkMark(ids, status) {
 }
 
 function switchView(name) {
+  state.currentView = name;
+  let targetSection = name;
+  
+  // If viewing daily/weekly/monthly in the same table layout
+  if (['daily', 'weekly', 'monthly'].includes(name)) {
+    targetSection = 'table';
+    state.filters.recurrence = name.toUpperCase();
+  } else {
+    state.filters.recurrence = 'ALL';
+  }
+
   document.querySelectorAll('.nav-btn').forEach((item) => item.classList.remove('active'));
   document.querySelectorAll('.view').forEach((view) => view.classList.remove('active'));
-  const nav = document.querySelector(`.nav-btn[data-view="${name}"]`);
+  
+  const nav = document.getElementById(`nav-${name}`);
   if (nav) nav.classList.add('active');
-  const view = document.getElementById(`view-${name}`);
+  
+  const view = document.getElementById(`view-${targetSection}`);
   if (view) view.classList.add('active');
+  
+  renderAll(); // Re-render table if filters changed
 }
 
 function initViewSwitching() {
+  // Navigation now uses actual <a> tags, so we let the browser handle target="_blank".
+  // Only intercept if they don't have target="_blank"
   document.querySelectorAll('.nav-btn').forEach((button) => {
-    button.addEventListener('click', () => {
-      if (button.dataset.view === 'admin' && state.user?.role !== 'ADMIN') {
-        return;
-      }
-      switchView(button.dataset.view);
+    button.addEventListener('click', (e) => {
+      if (button.id === 'nav-admin' && state.user?.role !== 'ADMIN') return;
+      if (button.target === '_blank') return; // Let browser open new tab
+      
+      e.preventDefault(); // Prevent full page reload for same-tab navigation
+      const viewName = button.id.replace('nav-', '');
+      // Update URL without reload
+      window.history.pushState({}, '', `/?view=${viewName}`);
+      switchView(viewName);
     });
   });
 }
@@ -270,6 +293,21 @@ function initActions() {
       input.checked = event.target.checked;
     });
   });
+  
+  // Profile settings logic
+  document.getElementById('btn-profile').addEventListener('click', () => {
+    window.history.pushState({}, '', '/?view=profile');
+    switchView('profile');
+  });
+
+  document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      display_name: document.getElementById('profile-display-name').value,
+      recommendation_setting: document.getElementById('profile-recommendation').checked
+    };
+    await runAction(() => api.updateSettings(payload), 'Profile updated');
+  });
 }
 
 
@@ -307,6 +345,19 @@ async function boot() {
   }
 
   applyAuthUi();
+
+  // Populate profile form
+  if (state.user) {
+    const pName = document.getElementById('profile-display-name');
+    const pRec = document.getElementById('profile-recommendation');
+    if (pName) pName.value = state.user.display_name || '';
+    if (pRec) pRec.checked = !!state.user.recommendation_setting;
+  }
+
+  // Handle URL query parameter view
+  const params = new URLSearchParams(window.location.search);
+  const requestedView = params.get('view') || 'table';
+  switchView(requestedView);
 
   setBusy(true);
   try {

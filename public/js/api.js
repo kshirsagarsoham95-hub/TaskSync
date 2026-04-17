@@ -33,8 +33,18 @@ export const api = {
       method: 'POST', headers: json, body: JSON.stringify(payload)
     });
   },
+  register(payload) {
+    return request('/api/auth/register', {
+      method: 'POST', headers: json, body: JSON.stringify(payload)
+    });
+  },
   me() {
     return request('/api/auth/me');
+  },
+  updateSettings(payload) {
+    return request('/api/auth/me/settings', {
+      method: 'PUT', headers: json, body: JSON.stringify(payload)
+    });
   },
 
   // ── Tasks ──────────────────────────────────────────────────
