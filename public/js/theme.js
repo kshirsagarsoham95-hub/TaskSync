@@ -18,5 +18,5 @@ export function updateThemeButton() {
   if (!button) {
     return;
   }
-  button.textContent = document.body.dataset.theme === 'light' ? 'Dark' : 'Light';
+  button.textContent = document.body.dataset.theme === 'light' ? '☾ Dark' : '☀ Light';
 }

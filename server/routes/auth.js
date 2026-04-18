@@ -50,4 +50,42 @@ router.put('/me/settings', (req, res) => {
   }
 });
 
+router.put('/me/profile', (req, res) => {
+  const user = getRequestUser(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+  try {
+    const { display_name } = req.body;
+    if (!display_name || !display_name.trim()) {
+      return res.status(400).json({ error: 'Display name is required' });
+    }
+    db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(display_name.trim(), user.id);
+    return res.json({ user: db.getUserById(user.id), message: 'Profile updated' });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+router.put('/me/password', (req, res) => {
+  const user = getRequestUser(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Both current and new passwords are required' });
+    }
+    const fullUser = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(user.id);
+    if (fullUser.password_hash !== db.hashPassword(currentPassword)) {
+      return res.status(401).json({ error: 'Incorrect current password' });
+    }
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(db.hashPassword(newPassword), user.id);
+    return res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
 module.exports = router;

@@ -84,6 +84,20 @@ const schemaStatements = [
     name TEXT PRIMARY KEY,
     color TEXT NOT NULL DEFAULT '#89B4FA'
   )`,
+  `CREATE TABLE IF NOT EXISTS task_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    body TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS time_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    duration_minutes INTEGER
+  )`,
   `INSERT OR IGNORE INTO tag_colors (name, color) VALUES
     ('Work','#89B4FA'),('Personal','#A6E3A1'),
     ('Urgent','#F38BA8'),('Health','#FAB387'),
@@ -147,6 +161,27 @@ function ensureSchema(database) {
       throw error;
     }
   }
+
+  // Safety net in case tables were partially created without being in schemaStatements before
+  try {
+    database.exec(`CREATE TABLE IF NOT EXISTS task_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`);
+  } catch (error) {}
+
+  try {
+    database.exec(`CREATE TABLE IF NOT EXISTS time_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      started_at TEXT NOT NULL,
+      ended_at TEXT,
+      duration_minutes INTEGER
+    )`);
+  } catch (error) {}
 
   const insertUser = database.prepare(`
     INSERT OR IGNORE INTO users (username, password_hash, display_name, role)

@@ -142,4 +142,16 @@ router.get('/stats', (req, res, next) => {
   }
 });
 
+router.get('/priority-distribution', (req, res, next) => {
+  try {
+    const rows = db.prepare(`
+      SELECT priority, COUNT(*) AS count
+      FROM tasks
+      WHERE template_name IS NULL AND status != 'DONE'
+      GROUP BY priority ORDER BY priority
+    `).all();
+    res.json(rows);
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

@@ -1,61 +1,131 @@
-function ensureAdminShell() {
-  const root = document.getElementById('admin-root');
-  if (!root) {
-    return null;
-  }
-
-  if (!root.children.length) {
-    root.innerHTML = `
-      <article class="card stat-card">
-        <h3>Total Users</h3>
-        <div id="admin-total-users" class="stat-value">0</div>
-        <p>Accounts with access to TaskSync</p>
-      </article>
-      <article class="card stat-card">
-        <h3>Total Tasks</h3>
-        <div id="admin-total-tasks" class="stat-value">0</div>
-        <p id="admin-open-tasks">0 open tasks, 0 done tasks</p>
-      </article>
-      <article class="card chart-card">
-        <h3>Status Breakdown</h3>
-        <div id="admin-status-breakdown" class="empty-state">No status data yet.</div>
-      </article>
-      <article class="card chart-card">
-        <h3>Users</h3>
-        <div id="admin-user-list" class="empty-state">No users found.</div>
-      </article>
-    `;
-  }
-
-  return root;
-}
+import { api } from './api.js';
+import { showToast } from './toast.js';
+import { openModal, closeModal } from './modal.js';
 
 export function renderAdmin(overview, users) {
-  if (!ensureAdminShell()) {
-    return;
-  }
-  document.getElementById('admin-total-users').textContent = overview.totalUsers ?? 0;
-  document.getElementById('admin-total-tasks').textContent = overview.totalTasks ?? 0;
-  document.getElementById('admin-open-tasks').textContent = `${overview.openTasks ?? 0} open tasks, ${overview.doneTasks ?? 0} done tasks`;
+  const root = document.getElementById('admin-root');
+  
+  const statsHtml = `
+    <article class="card stat-card">
+      <div class="stat-icon">&#128101;</div>
+      <h3>Total Users</h3>
+      <div class="stat-value">${overview.totalUsers}</div>
+    </article>
+    <article class="card stat-card">
+      <div class="stat-icon">&#128203;</div>
+      <h3>Total Tasks</h3>
+      <div class="stat-value">${overview.totalTasks}</div>
+    </article>
+    <article class="card stat-card">
+      <div class="stat-icon">&#9881;</div>
+      <h3>Open Tasks</h3>
+      <div class="stat-value">${overview.openTasks}</div>
+    </article>
+    <article class="card stat-card">
+      <div class="stat-icon">&#10003;</div>
+      <h3>Done Tasks</h3>
+      <div class="stat-value">${overview.doneTasks}</div>
+    </article>
+  `;
 
-  const breakdownNode = document.getElementById('admin-status-breakdown');
-  breakdownNode.classList.remove('empty-state');
-  breakdownNode.innerHTML = (overview.statusBreakdown || []).map((item) => `
-    <div class="admin-list-row">
-      <strong>${item.status.replace('_', ' ')}</strong>
-      <span>${item.count}</span>
-    </div>
-  `).join('') || '<div class="empty-state">No status data yet.</div>';
+  let usersRows = users.map(u => `
+    <tr>
+      <td>${u.username}</td>
+      <td>${u.display_name}</td>
+      <td>${u.role}</td>
+      <td>${new Date(u.created_at).toLocaleDateString()}</td>
+      <td>
+        <button class="ghost-btn btn-del-user" data-id="${u.id}">Delete</button>
+      </td>
+    </tr>
+  `).join('');
 
-  const usersNode = document.getElementById('admin-user-list');
-  usersNode.classList.remove('empty-state');
-  usersNode.innerHTML = (users || []).map((user) => `
-    <div class="admin-list-row">
-      <div>
-        <strong>${user.display_name}</strong>
-        <div class="energy-meter">${user.username}</div>
+  const usersHtml = `
+    <div class="card" style="grid-column: 1 / -1; margin-top: 20px;">
+      <div class="section-heading" style="padding: 20px; border-bottom: 1px solid var(--line);">
+        <h2>User Management</h2>
+        <button id="btn-create-user" class="primary-btn">Create User</button>
       </div>
-      <span class="chip">${user.role}</span>
+      <div class="table-wrapper">
+        <table id="admin-users-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Display Name</th>
+              <th>Role</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>${usersRows}</tbody>
+        </table>
+      </div>
     </div>
-  `).join('') || '<div class="empty-state">No users found.</div>';
+  `;
+
+  root.innerHTML = statsHtml + usersHtml;
+
+  document.getElementById('btn-create-user').onclick = showCreateUserModal;
+  
+  root.querySelectorAll('.btn-del-user').forEach(btn => {
+    btn.onclick = async () => {
+      if (!confirm('Delete user?')) return;
+      try {
+        await api.adminDeleteUser(btn.dataset.id);
+        showToast('User deleted', 'success');
+        document.getElementById('nav-admin').click();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    };
+  });
+}
+
+function showCreateUserModal() {
+  const content = `
+    <form id="create-user-form" class="task-form">
+      <h2>Create User</h2>
+      <div class="form-grid">
+        <label class="full-width">
+          <span>Username</span>
+          <input type="text" name="username" required>
+        </label>
+        <label class="full-width">
+          <span>Password</span>
+          <input type="password" name="password" required minlength="6">
+        </label>
+        <label class="full-width">
+          <span>Display Name</span>
+          <input type="text" name="display_name">
+        </label>
+        <label class="full-width">
+          <span>Role</span>
+          <select name="role">
+            <option value="USER">User</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="ghost-btn" data-modal-close>Cancel</button>
+        <button type="submit" class="primary-btn">Create User</button>
+      </div>
+    </form>
+  `;
+  
+  openModal(content);
+  
+  document.getElementById('create-user-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const payload = Object.fromEntries(fd.entries());
+    try {
+      await api.adminCreateUser(payload);
+      showToast('User created', 'success');
+      closeModal();
+      document.getElementById('nav-admin').click();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
 }

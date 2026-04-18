@@ -1,8 +1,17 @@
+import { api } from './api.js';
+import { refreshData } from './app.js';
+
 let ganttOffset = 0; // days from today
+let bars = [];
+let draggingBar = null;
+let dragStartX = 0;
+let dragStartOffsetDays = 0;
 
 export function renderGantt(tasks) {
   const canvas = document.getElementById('gantt-canvas');
   if (!canvas) return;
+
+  bars = []; // reset interactivity map
 
   const dpr     = window.devicePixelRatio || 1;
   const wrap    = canvas.parentElement;
@@ -35,7 +44,7 @@ export function renderGantt(tasks) {
   endDate.setDate(base.getDate() + DAYS - 1);
   const fmt = d => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const label = document.getElementById('gantt-range-label');
-  if (label) label.textContent = `${fmt(base)} — ${fmt(endDate)}`;
+  if (label) label.textContent = `${fmt(base)} - ${fmt(endDate)}`;
 
   // background stripes
   for (let i = 0; i < DAYS; i++) {
@@ -92,16 +101,25 @@ export function renderGantt(tasks) {
     // task label
     ctx.fillStyle = css('--text');
     ctx.font = '13px Inter, sans-serif';
-    const label = task.title.length > 22 ? task.title.slice(0, 22) + '…' : task.title;
-    ctx.fillText(label, 12, y + ROW_H / 2 + 5);
+    const tLabel = task.title.length > 22 ? task.title.slice(0, 22) + '...' : task.title;
+    ctx.fillText(tLabel, 12, y + ROW_H / 2 + 5);
 
     // bar
     const taskDate = new Date(task.scheduled_date || task.deadline || base);
     taskDate.setHours(0, 0, 0, 0);
     const diffDays = Math.round((taskDate - base) / 86_400_000);
-    if (diffDays >= DAYS || diffDays < -1) return;
+    
+    // We allow drawing slightly out of bounds for drag interaction
+    if (diffDays > DAYS + 5 || diffDays < -5) return;
 
-    const startX  = LEFT + Math.max(0, diffDays) * dayW;
+    let visualDiffDays = diffDays;
+    
+    // Check if dragging
+    if (draggingBar && draggingBar.task.id === task.id) {
+       visualDiffDays = draggingBar.dragOffsetDays;
+    }
+
+    const startX  = LEFT + visualDiffDays * dayW;
     const barMinW = 32;
     const barW    = Math.max(barMinW, (task.estimated_minutes / 60) * dayW * 0.9);
     const barH    = ROW_H * 0.55;
@@ -111,9 +129,23 @@ export function renderGantt(tasks) {
     ctx.fillStyle   = color + 'cc';
     ctx.strokeStyle = color;
     ctx.lineWidth   = 1.5;
+    
+    // Highlight if dragging
+    if (draggingBar && draggingBar.task.id === task.id) {
+       ctx.fillStyle = color; // solid
+       ctx.shadowColor = 'rgba(0,0,0,0.5)';
+       ctx.shadowBlur = 10;
+    } else {
+       ctx.shadowBlur = 0;
+    }
+
     roundRect(ctx, startX + 2, barY, Math.min(barW, W - startX - 4), barH, 6);
     ctx.fill();
     ctx.stroke();
+    
+    ctx.shadowBlur = 0; // reset
+
+    bars.push({ x: startX + 2, y: barY, w: Math.min(barW, W - startX - 4), h: barH, task, diffDays });
 
     // label on bar
     if (barW > 48) {
@@ -129,6 +161,17 @@ export function renderGantt(tasks) {
     ctx.textAlign = 'center';
     ctx.fillText('No scheduled tasks to display.', W / 2, HEAD_H + 60);
     ctx.textAlign = 'left';
+  }
+
+  // Render Legend
+  const legend = document.getElementById('gantt-legend');
+  if (legend && legend.innerHTML === '') {
+    legend.innerHTML = COLORS.map((c, i) => `
+      <div class="gantt-legend-item">
+        <div class="gantt-legend-dot" style="background: ${c}"></div>
+        Priority ${i+1}
+      </div>
+    `).join('');
   }
 }
 
@@ -146,6 +189,8 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+let canvasListenersAttached = false;
+
 // Wire up Prev/Next after DOM ready
 export function initGanttControls(getTasks) {
   document.getElementById('gantt-prev')?.addEventListener('click', () => {
@@ -156,4 +201,72 @@ export function initGanttControls(getTasks) {
     ganttOffset += 7;
     renderGantt(getTasks());
   });
+
+  const canvas = document.getElementById('gantt-canvas');
+  if (!canvas || canvasListenersAttached) return;
+  canvasListenersAttached = true;
+
+  canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const clicked = bars.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+    if (clicked) {
+      draggingBar = { task: clicked.task, startDiff: clicked.diffDays, dragOffsetDays: clicked.diffDays };
+      dragStartX = x;
+      canvas.style.cursor = 'grabbing';
+    }
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    if (!draggingBar) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const hover = bars.some(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+      canvas.style.cursor = hover ? 'grab' : 'default';
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const wrap = canvas.parentElement;
+    const LEFT = 200;
+    const dayW = (wrap.clientWidth - LEFT) / 14;
+    
+    const deltaX = x - dragStartX;
+    const deltaDays = Math.round(deltaX / dayW);
+    
+    if (draggingBar.dragOffsetDays !== draggingBar.startDiff + deltaDays) {
+      draggingBar.dragOffsetDays = draggingBar.startDiff + deltaDays;
+      renderGantt(getTasks()); // Re-render to show dragged state
+    }
+  });
+
+  const stopDrag = async () => {
+    if (!draggingBar) return;
+    const task = draggingBar.task;
+    const delta = draggingBar.dragOffsetDays - draggingBar.startDiff;
+    draggingBar = null;
+    canvas.style.cursor = 'default';
+    
+    if (delta !== 0) {
+       // Reschedule API call
+       const newDate = new Date(task.scheduled_date || task.deadline || new Date());
+       newDate.setDate(newDate.getDate() + delta);
+       const dateStr = newDate.toISOString().split('T')[0];
+       try {
+         await api.updateTask(task.id, { ...task, scheduled_date: dateStr });
+         refreshData();
+       } catch(err) {
+         renderGantt(getTasks());
+       }
+    } else {
+       renderGantt(getTasks());
+    }
+  };
+
+  canvas.addEventListener('mouseup', stopDrag);
+  canvas.addEventListener('mouseleave', stopDrag);
 }

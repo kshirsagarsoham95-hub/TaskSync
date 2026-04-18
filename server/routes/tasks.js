@@ -489,4 +489,78 @@ router.delete('/:id', (req, res, next) => {
   }
 });
 
+router.delete('/bulk', (req, res, next) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || !ids.length) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+
+    db.transaction(() => {
+      // Create placeholders (?,?,?)
+      const placeholders = ids.map(() => '?').join(',');
+      db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders})`).run(...ids);
+    })();
+
+    res.json({ deleted: ids.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/duplicate', (req, res, next) => {
+  try {
+    const original = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    if (!original) throw error(404, 'Task not found');
+
+    let newTask;
+    db.transaction(() => {
+      const copy = { ...original };
+      delete copy.id;
+      copy.status = 'TODO';
+      copy.completed_at = null;
+      copy.deadline_hit = 0;
+      copy.title = copy.title + ' (copy)';
+      copy.created_at = new Date().toISOString();
+
+      const insert = db.prepare(`
+        INSERT INTO tasks (${columns})
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `);
+      
+      const normalized = db.normalizeTaskPayload(copy);
+      
+      const values = [
+        normalized.title, normalized.description, normalized.deadline,
+        normalized.estimated_minutes, normalized.priority, normalized.energy_level,
+        normalized.scheduled_date, normalized.status, normalized.tags,
+        normalized.notes, normalized.template_name, normalized.recurrence,
+        normalized.recurrence_parent, normalized.buffer_minutes,
+        normalized.priority_score, normalized.deadline_hit, normalized.completed_at
+      ];
+
+      const result = insert.run(...values);
+      newTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(result.lastInsertRowid);
+
+      // Duplicate subtasks
+      const subtasks = db.prepare('SELECT * FROM subtasks WHERE task_id = ?').all(original.id);
+      if (subtasks.length > 0) {
+        const insertSub = db.prepare('INSERT INTO subtasks (task_id, title, checked, sort_order) VALUES (?, ?, ?, ?)');
+        subtasks.forEach(s => insertSub.run(newTask.id, s.title, s.checked, s.sort_order));
+      }
+
+      // Duplicate attachments
+      const attachments = db.prepare('SELECT * FROM attachments WHERE task_id = ?').all(original.id);
+      if (attachments.length > 0) {
+        const insertAtt = db.prepare('INSERT INTO attachments (task_id, link) VALUES (?, ?)');
+        attachments.forEach(a => insertAtt.run(newTask.id, a.link));
+      }
+    })();
+
+    res.json(newTask);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

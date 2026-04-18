@@ -211,3 +211,12 @@
   .board-grid { grid-template-columns: 1fr; }
   .kanban-column { min-height: auto; }
 }
+
+.kanban-column.collapsed .kanban-list, 
+.kanban-column.collapsed .kanban-add-btn {
+  display: none !important;
+}
+.kanban-column.collapsed {
+  width: auto;
+  min-width: 150px;
+}

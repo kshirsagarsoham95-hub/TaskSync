@@ -3,6 +3,10 @@ export function exportTasksCsv(tasks) {
     ['Title', 'Description', 'Deadline', 'Estimated Minutes', 'Priority', 'Energy', 'Tags', 'Status', 'Scheduled Date']
   ];
   tasks.forEach((task) => {
+    let tagsArray = [];
+    if (Array.isArray(task.tags)) tagsArray = task.tags;
+    else if (typeof task.tags === 'string') tagsArray = task.tags.split(',').map(t => t.trim()).filter(Boolean);
+
     rows.push([
       task.title,
       task.description || '',
@@ -10,7 +14,7 @@ export function exportTasksCsv(tasks) {
       task.estimated_minutes,
       task.priority,
       task.energy_level,
-      (task.tags || []).join('|'),
+      tagsArray.join('|'),
       task.status,
       task.scheduled_date || ''
     ]);

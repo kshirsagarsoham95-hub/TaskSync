@@ -1,0 +1,8 @@
+@media print {
+  #app-header, .view-toolbar, #modal-root,
+  #ai-panel, #pomodoro-panel, #toast-container { display: none !important; }
+  body { background: white !important; color: black !important; }
+  .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+  .view { display: block !important; }
+  #view-kanban, #view-gantt, #view-analytics, #view-admin, #view-profile { display: none !important; }
+}

@@ -42,4 +42,50 @@ router.get('/users', (req, res) => {
   res.json(users);
 });
 
+router.post('/users', (req, res, next) => {
+  try {
+    const { username, password, display_name, role } = req.body;
+    if (!username || !password || password.length < 6) {
+      return res.status(400).json({ error: 'Username and password (min 6 chars) are required' });
+    }
+    
+    const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(String(username).trim());
+    if (existing) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    const insertUser = db.prepare(`
+      INSERT INTO users (username, password_hash, display_name, role)
+      VALUES (?, ?, ?, ?)
+    `);
+    
+    const result = insertUser.run(
+      String(username).trim(),
+      db.hashPassword(password),
+      String(display_name || username).trim(),
+      role === 'ADMIN' ? 'ADMIN' : 'USER'
+    );
+    
+    res.json(db.getUserById(result.lastInsertRowid));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/users/:id', (req, res, next) => {
+  try {
+    const { getRequestUser } = require('../middleware/auth');
+    const user = getRequestUser(req);
+    
+    if (user.id === Number(req.params.id)) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+    
+    db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

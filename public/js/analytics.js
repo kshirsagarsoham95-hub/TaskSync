@@ -176,7 +176,66 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-export function renderAnalytics(stats, weekly, heatmap) {
+export function renderPriorityChart(data) {
+  if (!data?.length) return;
+  const canvas = document.getElementById('priority-chart');
+  if (!canvas) return;
+  const { ctx, w, h } = clearCanvas(canvas);
+
+  const cx = w / 2;
+  const cy = h / 2;
+  const radius = Math.min(cx, cy) - 20;
+
+  const total = data.reduce((sum, item) => sum + item.count, 0);
+  if (total === 0) {
+    ctx.fillStyle = cssVar('--muted');
+    ctx.textAlign = 'center';
+    ctx.fillText('No priority data available', cx, cy);
+    return;
+  }
+
+  let startAngle = 0;
+  const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6']; // priority 5 to 1 mapping or just random colors, priority ranges 1-5. We mapped P5 to red in backend?
+  // Our priorities: 1 (low), 2, 3, 4, 5 (high)
+  const pColors = {
+    '1': '#3b82f6',
+    '2': '#22c55e',
+    '3': '#eab308',
+    '4': '#f97316',
+    '5': '#ef4444'
+  };
+
+  data.forEach((item) => {
+    const sliceAngle = (item.count / total) * 2 * Math.PI;
+    const endAngle = startAngle + sliceAngle;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, startAngle, endAngle);
+    ctx.closePath();
+
+    ctx.fillStyle = pColors[String(item.priority)] || '#ccc';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // label
+    const midAngle = startAngle + sliceAngle / 2;
+    const labelX = cx + Math.cos(midAngle) * (radius + 12);
+    const labelY = cy + Math.sin(midAngle) * (radius + 12);
+    
+    ctx.fillStyle = cssVar('--text');
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`P${item.priority}`, labelX, labelY);
+
+    startAngle = endAngle;
+  });
+}
+
+export function renderAnalytics(stats, weekly, heatmap, priority) {
   if (!stats) return;
   document.getElementById('stat-hit-rate').textContent    = `${Math.round(stats.hitRate     || 0)}%`;
   document.getElementById('stat-completed').textContent   = `${stats.completedTasks          || 0} completed`;
@@ -186,4 +245,5 @@ export function renderAnalytics(stats, weekly, heatmap) {
   if (weekly?.length)  renderWeeklyChart(weekly);
   if (stats?.trend)    renderTrendChart(stats);
   if (heatmap?.length) renderHeatmap(heatmap);
+  if (priority?.length) renderPriorityChart(priority);
 }

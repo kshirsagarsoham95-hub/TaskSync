@@ -1,3 +1,9 @@
+require('fs').existsSync('.env') && require('fs').readFileSync('.env','utf8')
+  .split('\n').forEach(line => {
+    const [k,...v] = line.split('=');
+    if (k?.trim()) process.env[k.trim()] = v.join('=').trim();
+  });
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -15,6 +21,9 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/subtasks', require('./routes/subtasks'));
 app.use('/api/attachments', require('./routes/attachments'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/ai', require('./routes/ai'));
+app.use('/api', require('./routes/comments'));
+app.use('/api', require('./routes/timeTracking'));
 app.use(require('./middleware/errorHandler'));
 
 app.get('*', (req, res) => {

@@ -24,10 +24,14 @@ function priorityBar(priority) {
   ).join('');
 }
 
-function tagChips(tags = []) {
-  if (!tags.length) return '';
-  return tags.slice(0, 3).map(t => `<span class="chip">${t}</span>`).join('') +
-    (tags.length > 3 ? `<span class="chip">+${tags.length - 3}</span>` : '');
+function tagChips(tags) {
+  let tagsArray = [];
+  if (Array.isArray(tags)) tagsArray = tags;
+  else if (typeof tags === 'string') tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+  
+  if (!tagsArray.length) return '';
+  return tagsArray.slice(0, 3).map(t => `<span class="chip">${t}</span>`).join('') +
+    (tagsArray.length > 3 ? `<span class="chip">+${tagsArray.length - 3}</span>` : '');
 }
 
 function buildCard(task, handlers) {
@@ -36,14 +40,23 @@ function buildCard(task, handlers) {
   card.draggable  = true;
   card.dataset.id = task.id;
 
+  let recurBadge = '';
+  if (task.recurrence && task.recurrence !== 'NONE') {
+    recurBadge = `<span class="recur-badge">&#8635; ${task.recurrence.toLowerCase()}</span>`;
+  }
+
   card.innerHTML = `
-    <div class="kcard-top">
-      <h3 class="kcard-title">${task.title}</h3>
-      <button class="kcard-edit icon-btn" title="Edit task">&#9998;</button>
+    <div class="kcard-top" style="align-items: flex-start;">
+      <div style="display:flex; gap: 8px; align-items: flex-start; flex: 1;">
+        <input type="checkbox" class="task-select" value="${task.id}" style="margin-top: 4px;">
+        <h3 class="kcard-title" style="margin: 0;">${task.title} ${recurBadge}</h3>
+      </div>
+      <div>
+        <button class="kcard-duplicate icon-btn" title="Duplicate task" style="font-size: 1.1em; margin-right: 4px;">&#10697;</button>
+        <button class="kcard-edit icon-btn" title="Edit task">&#9998;</button>
+      </div>
     </div>
-    ${task.description
-      ? `<p class="kcard-desc">${task.description}</p>`
-      : ''}
+    ${task.description ? `<p class="kcard-desc">${task.description}</p>` : ''}
     <div class="kcard-tags">${tagChips(task.tags)}</div>
     <div class="kcard-footer">
       <div class="kcard-meta">
@@ -63,6 +76,13 @@ function buildCard(task, handlers) {
     e.stopPropagation();
     handlers.onEdit?.(task);
   });
+  
+  if (handlers.onDuplicate) {
+    card.querySelector('.kcard-duplicate').addEventListener('click', (e) => {
+      e.stopPropagation();
+      handlers.onDuplicate(task);
+    });
+  }
 
   card.querySelector('.kcard-status-select').addEventListener('change', (e) => {
     handlers.onMove(task, e.target.value);
@@ -96,6 +116,20 @@ function wireDropzone(column, status, tasks, handlers) {
   });
 }
 
+function wireColumnCollapse() {
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    const header = col.querySelector('.column-header');
+    if (!header.dataset.collapseWired) {
+      header.dataset.collapseWired = 'true';
+      header.style.cursor = 'pointer';
+      header.title = 'Click to collapse/expand column';
+      header.addEventListener('click', () => {
+        col.classList.toggle('collapsed');
+      });
+    }
+  });
+}
+
 export function renderKanban(tasks, handlers) {
   const statuses = ['TODO', 'IN_PROGRESS', 'DONE'];
 
@@ -120,9 +154,7 @@ export function renderKanban(tasks, handlers) {
     wireDropzone(list, status, tasks, handlers);
   });
 
-  // Wire "+ Add task" buttons in each column
   document.querySelectorAll('.kanban-add-btn').forEach((btn) => {
-    // remove old listeners by cloning
     const fresh = btn.cloneNode(true);
     btn.replaceWith(fresh);
     fresh.addEventListener('click', () => {
@@ -130,4 +162,6 @@ export function renderKanban(tasks, handlers) {
       handlers.onAdd?.(status);
     });
   });
+
+  wireColumnCollapse();
 }

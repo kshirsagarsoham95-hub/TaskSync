@@ -4,25 +4,35 @@ import { showToast } from './toast.js';
 import { initModal } from './modal.js';
 import { renderTable, getSelectedTaskIds } from './table.js';
 import { renderKanban } from './kanban.js';
-import { renderGantt } from './gantt.js';
+import { renderGantt, initGanttControls } from './gantt.js';
 import { renderAnalytics } from './analytics.js';
 import { openTaskForm } from './taskForm.js';
 import { selectTemplate } from './templates.js';
 import { generateRecurringTasks, rescheduleMissedTasks } from './scheduler.js';
 import { exportTasksCsv, printDashboard } from './export.js';
 import { renderAdmin } from './admin.js';
-import { initGanttControls } from './gantt.js';
+import { renderProfile } from './profile.js';
+import { initAiPanel } from './ai.js';
+import { initShortcuts } from './shortcuts.js';
+import { initPomodoro } from './pomodoro.js';
+import { initNotifications, checkDueToday } from './notifications.js';
+import { checkOnboarding } from './onboarding.js';
 
 const AUTH_KEY = 'tasksync-user';
 
-const state = {
+export const state = {
   user: null,
   tasks: [],
-  filters: { search: '', status: 'ALL', date: '', recurrence: 'ALL' },
+  filters: { 
+    search: '', status: 'ALL', date: '', recurrence: 'ALL',
+    tags: [], minPriority: 1, maxPriority: 5, energyLevel: '',
+    dateFrom: '', dateTo: '' 
+  },
   analytics: { weekly: [], heatmap: [], stats: {} },
   admin: { overview: null, users: [] },
   busy: false,
-  currentView: 'table'
+  currentView: 'table',
+  lastDeleted: null
 };
 
 function setBusy(value) {
@@ -49,21 +59,17 @@ function applyAuthUi() {
     window.location.href = '/login.html';
     return;
   }
-
   const navAdmin = document.getElementById('nav-admin');
-  if (navAdmin) {
-    navAdmin.hidden = state.user.role !== 'ADMIN';
-  }
+  if (navAdmin) navAdmin.hidden = state.user.role !== 'ADMIN';
+
+  const navProfile = document.getElementById('nav-profile');
+  if (navProfile) navProfile.hidden = false;
 
   const nameNode = document.getElementById('current-user-name');
-  if (nameNode) {
-    nameNode.textContent = state.user.display_name || state.user.username || 'User';
-  }
+  if (nameNode) nameNode.textContent = state.user.display_name || state.user.username || 'User';
 
   const roleNode = document.getElementById('current-user-role');
-  if (roleNode) {
-    roleNode.textContent = state.user.role || '';
-  }
+  if (roleNode) roleNode.textContent = state.user.role || '';
 
   const appShell = document.getElementById('app-shell');
   if (appShell) appShell.hidden = false;
@@ -72,39 +78,87 @@ function applyAuthUi() {
 function filteredTasks() {
   const search = state.filters.search.trim().toLowerCase();
   return state.tasks.filter((task) => {
-    const haystack = [task.title, task.description, (task.tags || []).join(',')].join(' ').toLowerCase();
+    let tagsStr = '';
+    if (Array.isArray(task.tags)) tagsStr = task.tags.join(',');
+    else if (typeof task.tags === 'string') tagsStr = task.tags;
+    const haystack = [task.title, task.description, tagsStr].join(' ').toLowerCase();
     const matchesSearch = !search || haystack.includes(search);
     const matchesStatus = state.filters.status === 'ALL' || task.status === state.filters.status;
     const matchesDate = !state.filters.date || task.scheduled_date === state.filters.date || task.deadline === state.filters.date;
     const matchesRecurrence = state.filters.recurrence === 'ALL' || task.recurrence === state.filters.recurrence;
-    return matchesSearch && matchesStatus && matchesDate && matchesRecurrence;
+    
+    // Advanced Filters
+    const matchesTags = state.filters.tags.length === 0 || state.filters.tags.some(tag => (task.tags||'').includes(tag));
+    const matchesPriority = task.priority >= state.filters.minPriority && task.priority <= state.filters.maxPriority;
+    const matchesEnergy = !state.filters.energyLevel || task.energy_level === Number(state.filters.energyLevel);
+    const matchesDateFrom = !state.filters.dateFrom || (task.scheduled_date && task.scheduled_date >= state.filters.dateFrom);
+    const matchesDateTo = !state.filters.dateTo || (task.scheduled_date && task.scheduled_date <= state.filters.dateTo);
+
+    return matchesSearch && matchesStatus && matchesDate && matchesRecurrence && matchesTags && matchesPriority && matchesEnergy && matchesDateFrom && matchesDateTo;
+  });
+}
+
+function initTagFilterBar() {
+  const bar = document.getElementById('tag-filter-bar');
+  if (!bar) return;
+  const allTags = new Set();
+  state.tasks.forEach(t => {
+    if (Array.isArray(t.tags)) {
+      t.tags.forEach(tag => allTags.add(tag.trim()));
+    } else if (typeof t.tags === 'string') {
+      t.tags.split(',').forEach(tag => allTags.add(tag.trim()));
+    }
+  });
+  bar.innerHTML = '';
+  [...allTags].filter(Boolean).sort().forEach(tag => {
+    const btn = document.createElement('button');
+    btn.className = `tag-filter-chip ${state.filters.tags.includes(tag) ? 'active' : ''}`;
+    btn.innerText = tag;
+    btn.onclick = () => {
+      if (state.filters.tags.includes(tag)) {
+        state.filters.tags = state.filters.tags.filter(t => t !== tag);
+      } else {
+        state.filters.tags.push(tag);
+      }
+      btn.classList.toggle('active');
+      renderAll();
+    };
+    bar.appendChild(btn);
   });
 }
 
 function renderAll() {
   const tasks = filteredTasks();
+  initTagFilterBar();
   renderTable(tasks, {
     onEdit: (task) => openEditor(task),
-    onDelete: (task) => deleteTask(task)
+    onDelete: (task) => deleteTask(task),
+    onDuplicate: (task) => runAction(() => api.duplicateTask(task.id), 'Task duplicated')
   });
   renderKanban(tasks, {
-  onMove: (task, status) => changeStatus(task.id, status),
-  onEdit: (task) => openEditor(task),
-  onAdd:  (status) => openEditor({ status })
-});
+    onMove: (task, status) => changeStatus(task.id, status),
+    onEdit: (task) => openEditor(task),
+    onAdd:  (status) => openEditor({ status }),
+    onDuplicate: (task) => runAction(() => api.duplicateTask(task.id), 'Task duplicated')
+  });
   renderGantt(tasks);
   renderAnalytics(state.analytics.stats, state.analytics.weekly, state.analytics.heatmap);
+  
   if (state.user?.role === 'ADMIN' && state.admin.overview) {
     renderAdmin(state.admin.overview, state.admin.users);
   }
+  if (state.currentView === 'settings' && state.user) {
+    renderProfile(state.user, saveAuthUser);
+  }
 }
 
-async function refreshData() {
+export async function refreshData() {
   const requests = [
     api.getTasks({}),
     api.getWeeklyAnalytics(),
     api.getHeatmapAnalytics(),
-    api.getStatsAnalytics()
+    api.getStatsAnalytics(),
+    api.getPriorityDistribution()
   ];
 
   if (state.user?.role === 'ADMIN') {
@@ -113,27 +167,24 @@ async function refreshData() {
 
   const results = await Promise.all(requests);
   state.tasks = results[0];
-  state.analytics = { weekly: results[1], heatmap: results[2], stats: results[3] };
+  state.analytics = { weekly: results[1], heatmap: results[2], stats: results[3], priority: results[4] };
 
   if (state.user?.role === 'ADMIN') {
-    state.admin = { overview: results[4], users: results[5] };
+    state.admin = { overview: results[5], users: results[6] };
   } else {
     state.admin = { overview: null, users: [] };
   }
 
+  checkDueToday(state.tasks);
   renderAll();
 }
 
 async function runAction(work, successMessage) {
-  if (state.busy) {
-    return;
-  }
+  if (state.busy) return;
   setBusy(true);
   try {
     const result = await work();
-    if (successMessage) {
-      showToast(successMessage, 'success');
-    }
+    if (successMessage) showToast(successMessage, 'success');
     await refreshData();
     return result;
   } catch (error) {
@@ -156,10 +207,28 @@ function openEditor(task = null) {
 }
 
 async function deleteTask(task) {
-  if (!window.confirm(`Delete "${task.title}"?`)) {
-    return;
-  }
-  await runAction(() => api.deleteTask(task.id), 'Task deleted');
+  if (!window.confirm(`Delete "${task.title}"?`)) return;
+  
+  // Store for undo
+  const fullTask = await api.getTask(task.id);
+  state.lastDeleted = fullTask;
+
+  await runAction(() => api.deleteTask(task.id), null);
+  
+  showToast('Task deleted', 'info', {
+    undoLabel: 'Undo',
+    undoCallback: async () => {
+      if (!state.lastDeleted) return;
+      const { subtasks, attachments, ...payload } = state.lastDeleted;
+      delete payload.id;
+      const restored = await api.createTask(payload);
+      // Restore subtasks & attachments via API if those routes existed,
+      // but without bulk subtask create we just restore the main task for now.
+      await refreshData();
+      showToast('Task restored', 'success');
+      state.lastDeleted = null;
+    }
+  });
 }
 
 async function changeStatus(taskId, status) {
@@ -167,10 +236,7 @@ async function changeStatus(taskId, status) {
 }
 
 async function bulkMark(ids, status) {
-  if (!ids.length) {
-    showToast('Select at least one task first', 'error');
-    return;
-  }
+  if (!ids.length) { showToast('Select at least one task first', 'error'); return; }
   await runAction(
     () => Promise.all(ids.map((id) => status === 'DONE' ? api.completeTask(id) : api.incompleteTask(id))),
     `Updated ${ids.length} task${ids.length > 1 ? 's' : ''}`
@@ -181,7 +247,6 @@ function switchView(name) {
   state.currentView = name;
   let targetSection = name;
   
-  // If viewing daily/weekly/monthly in the same table layout
   if (['daily', 'weekly', 'monthly'].includes(name)) {
     targetSection = 'table';
     state.filters.recurrence = name.toUpperCase();
@@ -198,45 +263,113 @@ function switchView(name) {
   const view = document.getElementById(`view-${targetSection}`);
   if (view) view.classList.add('active');
   
-  renderAll(); // Re-render table if filters changed
+  renderAll();
 }
 
 function initViewSwitching() {
-  // Navigation now uses actual <a> tags, so we let the browser handle target="_blank".
-  // Only intercept if they don't have target="_blank"
   document.querySelectorAll('.nav-btn').forEach((button) => {
     button.addEventListener('click', (e) => {
       if (button.id === 'nav-admin' && state.user?.role !== 'ADMIN') return;
-      if (button.target === '_blank') return; // Let browser open new tab
-      
-      e.preventDefault(); // Prevent full page reload for same-tab navigation
+      if (button.target === '_blank') return;
+      e.preventDefault();
       const viewName = button.id.replace('nav-', '');
-      // Update URL without reload
       window.history.pushState({}, '', `/?view=${viewName}`);
+      if (viewName !== 'admin') {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && !sidebar.classList.contains('hidden')) {
+          sidebar.classList.add('hidden');
+        }
+      }
       switchView(viewName);
     });
   });
+  
+  document.getElementById('btn-go-password')?.addEventListener('click', () => {
+    window.history.pushState({}, '', '/?view=password');
+    switchView('password');
+  });
+  document.getElementById('btn-back-settings')?.addEventListener('click', () => {
+    window.history.pushState({}, '', '/?view=settings');
+    switchView('settings');
+  });
+  document.getElementById('btn-profile')?.addEventListener('click', () => {
+    window.history.pushState({}, '', '/?view=settings');
+    switchView('settings');
+  });
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
 }
 
 function initFilters() {
-  document.getElementById('search-input').addEventListener('input', (event) => {
+  document.getElementById('search-input').addEventListener('input', debounce((event) => {
     state.filters.search = event.target.value;
     renderAll();
-  });
+  }, 250));
+  
   document.getElementById('status-filter').addEventListener('change', (event) => {
     state.filters.status = event.target.value;
     renderAll();
   });
+  
   document.getElementById('date-filter').addEventListener('change', (event) => {
     state.filters.date = event.target.value;
     renderAll();
   });
+  
   document.getElementById('search-clear').addEventListener('click', () => {
-    state.filters = { search: '', status: 'ALL', date: '' };
+    state.filters = { search: '', status: 'ALL', date: '', recurrence: 'ALL', tags: [], minPriority: 1, maxPriority: 5, energyLevel: '', dateFrom: '', dateTo: '' };
     document.getElementById('search-input').value = '';
     document.getElementById('status-filter').value = 'ALL';
     document.getElementById('date-filter').value = '';
+    document.getElementById('filter-min-priority').value = '1';
+    document.getElementById('filter-max-priority').value = '5';
+    document.getElementById('filter-energy').value = '';
+    document.getElementById('filter-date-from').value = '';
+    document.getElementById('filter-date-to').value = '';
     renderAll();
+  });
+
+  document.getElementById('filter-min-priority').addEventListener('input', e => { state.filters.minPriority = Number(e.target.value); renderAll(); });
+  document.getElementById('filter-max-priority').addEventListener('input', e => { state.filters.maxPriority = Number(e.target.value); renderAll(); });
+  document.getElementById('filter-energy').addEventListener('change', e => { state.filters.energyLevel = e.target.value; renderAll(); });
+  document.getElementById('filter-date-from').addEventListener('change', e => { state.filters.dateFrom = e.target.value; renderAll(); });
+  document.getElementById('filter-date-to').addEventListener('change', e => { state.filters.dateTo = e.target.value; renderAll(); });
+  document.getElementById('btn-reset-filters').addEventListener('click', () => {
+    document.getElementById('search-clear').click();
+  });
+}
+
+function initSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const toggleBtn = document.getElementById('btn-sidebar-toggle');
+  const closeBtn = document.getElementById('btn-sidebar-close');
+  
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('hidden');
+    });
+  }
+  
+  if (closeBtn && sidebar) {
+    closeBtn.addEventListener('click', () => {
+      sidebar.classList.add('hidden');
+    });
+  }
+
+  // Close sidebar if clicked outside
+  document.addEventListener('click', (e) => {
+    if (sidebar && !sidebar.classList.contains('hidden') && 
+        !sidebar.contains(e.target) && 
+        e.target !== toggleBtn && 
+        !toggleBtn.contains(e.target)) {
+      sidebar.classList.add('hidden');
+    }
   });
 }
 
@@ -251,6 +384,14 @@ function initActions() {
   document.getElementById('btn-mark-incomplete').addEventListener('click', () => bulkMark(getSelectedTaskIds(), 'TODO'));
   document.getElementById('btn-export-csv').addEventListener('click', () => exportTasksCsv(filteredTasks()));
   document.getElementById('btn-export-pdf').addEventListener('click', printDashboard);
+  
+  document.getElementById('btn-bulk-delete').addEventListener('click', async () => {
+    const ids = getSelectedTaskIds();
+    if (!ids.length) { showToast('Select at least one task', 'error'); return; }
+    if (!confirm(`Delete ${ids.length} task(s)?`)) return;
+    await runAction(() => api.bulkDelete(ids), `Deleted ${ids.length} task(s)`);
+  });
+
   document.getElementById('btn-generate-recurring').addEventListener('click', async () => {
     const result = await runAction(() => generateRecurringTasks(), null);
     showToast(`Generated ${result.created} recurring task${result.created === 1 ? '' : 's'}`, 'success');
@@ -263,9 +404,7 @@ function initActions() {
     try {
       const templates = await api.getTemplates();
       const selected = selectTemplate(templates);
-      if (!selected) {
-        return;
-      }
+      if (!selected) return;
       await runAction(() => api.createFromTemplate(selected.id), 'Task created from template');
     } catch (error) {
       showToast(error.message || 'Could not load templates', 'error');
@@ -274,49 +413,21 @@ function initActions() {
   document.getElementById('csv-file-input').addEventListener('change', async (event) => {
     const [file] = event.target.files;
     event.target.value = '';
-    if (!file) {
-      return;
-    }
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      showToast('Please choose a CSV file.', 'error');
-      return;
-    }
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv')) { showToast('Please choose a CSV file.', 'error'); return; }
     const result = await runAction(() => api.importCsv(file), null);
     const detail = result.errors?.length ? ` Imported ${result.imported}, skipped ${result.skipped}.` : ` Imported ${result.imported}.`;
     showToast(`CSV import complete.${detail}`, result.errors?.length ? 'error' : 'success');
-    if (result.errors?.length) {
-      window.alert(`Import finished with notes:\n\n${result.errors.join('\n')}`);
-    }
+    if (result.errors?.length) window.alert(`Import finished with notes:\n\n${result.errors.join('\n')}`);
   });
   document.getElementById('select-all').addEventListener('change', (event) => {
-    document.querySelectorAll('.task-select').forEach((input) => {
-      input.checked = event.target.checked;
-    });
-  });
-  
-  // Profile settings logic
-  document.getElementById('btn-profile').addEventListener('click', () => {
-    window.history.pushState({}, '', '/?view=profile');
-    switchView('profile');
-  });
-
-  document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const payload = {
-      display_name: document.getElementById('profile-display-name').value,
-      recommendation_setting: document.getElementById('profile-recommendation').checked
-    };
-    await runAction(() => api.updateSettings(payload), 'Profile updated');
+    document.querySelectorAll('.task-select').forEach((input) => input.checked = event.target.checked);
   });
 }
 
-
 async function restoreAuth() {
   const stored = localStorage.getItem(AUTH_KEY);
-  if (!stored) {
-    return;
-  }
-
+  if (!stored) return;
   try {
     const user = JSON.parse(stored);
     saveAuthUser(user);
@@ -334,11 +445,23 @@ async function boot() {
   initFilters();
   initActions();
   initGanttControls(() => filteredTasks());
+  
+  initSidebar();
+  initAiPanel();
+  initPomodoro();
+  initNotifications();
+  initShortcuts({
+    onNewTask: () => openEditor(),
+    onSearch: () => document.getElementById('search-input').focus(),
+    onCloseModal: () => document.querySelector('.modal-close')?.click(),
+    onSwitchView: (view) => {
+      document.getElementById('nav-' + view)?.click();
+    },
+    onHelp: () => alert('Shortcuts:\nN - New Task\n/ - Search\nEscape - Close\nK - Kanban\nT - Table\nG - Gantt\nA - Analytics')
+  });
 
-  // Restore user properly
   await restoreAuth();
 
-  // 🚨 If not logged in → redirect immediately
   if (!state.user) {
     window.location.href = '/login.html';
     return;
@@ -346,15 +469,6 @@ async function boot() {
 
   applyAuthUi();
 
-  // Populate profile form
-  if (state.user) {
-    const pName = document.getElementById('profile-display-name');
-    const pRec = document.getElementById('profile-recommendation');
-    if (pName) pName.value = state.user.display_name || '';
-    if (pRec) pRec.checked = !!state.user.recommendation_setting;
-  }
-
-  // Handle URL query parameter view
   const params = new URLSearchParams(window.location.search);
   const requestedView = params.get('view') || 'table';
   switchView(requestedView);
@@ -362,6 +476,7 @@ async function boot() {
   setBusy(true);
   try {
     await refreshData();
+    checkOnboarding();
   } catch (error) {
     console.error(error);
     showToast(error.message || 'Failed to load TaskSync', 'error');
