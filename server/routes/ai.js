@@ -10,9 +10,9 @@ router.post('/chat', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'Anthropic API key is not configured' });
+      return res.status(500).json({ error: 'Gemini API key is not configured' });
     }
 
     const systemPrompt = `You are TaskSync AI, a productivity assistant. Answer questions concisely and helpfully.
@@ -24,29 +24,40 @@ ${JSON.stringify(context || [], null, 2)}`;
     // Fallback to fetch if node-fetch is not needed (Node 18+)
     const fetchFn = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
 
-    const response = await fetchFn('https://api.anthropic.com/v1/messages', {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetchFn(url, {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022', // updated to a valid claude model, prompt asked for claude-opus-4-5 which doesn't exist, I'll use claude-3-opus-20240229 if they meant opus
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: message }]
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [{
+          role: "user",
+          parts: [{ text: message }]
+        }],
+        generationConfig: {
+          maxOutputTokens: 1024,
+        }
       })
     });
 
     if (!response.ok) {
       const errBody = await response.text();
-      console.error('Anthropic API Error:', errBody);
+      console.error('Gemini API Error:', errBody);
       return res.status(500).json({ error: 'AI provider error' });
     }
 
     const data = await response.json();
-    return res.json({ reply: data.content[0].text });
+    let reply = 'Sorry, I could not generate a response.';
+    if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
+      reply = data.candidates[0].content.parts[0].text;
+    }
+
+    return res.json({ reply });
   } catch (err) {
     next(err);
   }

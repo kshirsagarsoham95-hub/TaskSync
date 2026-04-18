@@ -48,7 +48,7 @@ async function sendMessage(msg) {
       deadline: t.deadline, priority: t.priority
     }));
     const res = await api.askAi(msg, summary);
-    document.getElementById(loadingId).innerText = res.reply;
+    document.getElementById(loadingId).innerHTML = parseMarkdown(res.reply);
   } catch (err) {
     document.getElementById(loadingId).innerText = "Sorry, I encountered an error: " + err.message;
   }
@@ -56,11 +56,25 @@ async function sendMessage(msg) {
   body.scrollTop = body.scrollHeight;
 }
 
+function parseMarkdown(text) {
+  if (!text) return '';
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+  
+  html = html.replace(/(<br>|^)\s*\*\s+(.*?)(?=<br>|$)/g, '$1&bull; $2');
+  return html;
+}
+
 function appendMessage(text, role) {
   const body = document.getElementById('ai-chat-body');
   const div = document.createElement('div');
   div.className = `ai-msg ${role}`;
-  div.innerText = text;
+  div.innerHTML = role === 'user' ? text.replace(/</g, '&lt;') : parseMarkdown(text);
   div.id = 'ai-msg-' + Date.now() + Math.random();
   body.appendChild(div);
   body.scrollTop = body.scrollHeight;

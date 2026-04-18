@@ -27,14 +27,14 @@ router.get('/weekly', (req, res, next) => {
       const planned = db.prepare(`
         SELECT COUNT(*) AS count
         FROM tasks
-        WHERE scheduled_date = ? AND template_name IS NULL
-      `).get(iso).count;
+        WHERE user_id = ? AND scheduled_date = ? AND template_name IS NULL
+      `).get(req.user.id, iso).count;
 
       const done = db.prepare(`
         SELECT COUNT(*) AS count
         FROM tasks
-        WHERE status = 'DONE' AND date(completed_at) = ?
-      `).get(iso).count;
+        WHERE user_id = ? AND status = 'DONE' AND date(completed_at) = ?
+      `).get(req.user.id, iso).count;
 
       return { day, planned, done };
     });

@@ -49,6 +49,7 @@ const schemaStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT DEFAULT '',
     deadline TEXT DEFAULT NULL,
@@ -145,6 +146,14 @@ function ensureSchema(database) {
       }
     }
   });
+
+  try {
+    database.exec('ALTER TABLE tasks ADD COLUMN user_id INTEGER DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE');
+  } catch (error) {
+    if (!String(error.message).toLowerCase().includes('duplicate column')) {
+      throw error;
+    }
+  }
 
   try {
     database.exec('ALTER TABLE subtasks ADD COLUMN sort_order INTEGER DEFAULT 0');

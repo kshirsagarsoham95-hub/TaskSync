@@ -1,4 +1,4 @@
-const CACHE = 'tasksync-v5';
+const CACHE = 'tasksync-v6';
 const STATIC = ['/', '/css/main.css', '/css/theme.css', '/css/kanban.css',
   '/css/gantt.css', '/css/analytics.css', '/js/app.js'];
 

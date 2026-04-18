@@ -8,7 +8,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.use(requireAuth);
 
 const columns = `
-  title, description, deadline, estimated_minutes, priority,
+  user_id, title, description, deadline, estimated_minutes, priority,
   energy_level, scheduled_date, status, tags, notes, template_name,
   recurrence, recurrence_parent, buffer_minutes, priority_score,
   deadline_hit, completed_at
@@ -56,20 +56,20 @@ function hydrateTask(task) {
   };
 }
 
-function findTask(id) {
-  return hydrateTask(db.prepare(taskQuery('WHERE id = ?')).get(id));
+function findTask(id, userId) {
+  return hydrateTask(db.prepare(taskQuery('WHERE id = ? AND user_id = ?')).get(id, userId));
 }
 
-function saveTask(payload) {
+function saveTask(payload, userId) {
   return db.prepare(`
     INSERT INTO tasks (${columns})
     VALUES (
-      @title, @description, @deadline, @estimated_minutes, @priority,
+      @user_id, @title, @description, @deadline, @estimated_minutes, @priority,
       @energy_level, @scheduled_date, @status, @tags, @notes, @template_name,
       @recurrence, @recurrence_parent, @buffer_minutes, @priority_score,
       @deadline_hit, @completed_at
     )
-  `).run(payload);
+  `).run({ ...payload, user_id: userId });
 }
 
 function syncSubtasks(taskId, subtasks = []) {
@@ -133,8 +133,8 @@ function nextOccurrence(seed, recurrence) {
   return date.toISOString().slice(0, 10);
 }
 
-function updateTaskStatus(taskId, status) {
-  const task = db.prepare(taskQuery('WHERE id = ?')).get(taskId);
+function updateTaskStatus(taskId, status, userId) {
+  const task = db.prepare(taskQuery('WHERE id = ? AND user_id = ?')).get(taskId, userId);
   if (!task) {
     throw error(404, 'Task not found');
   }
@@ -150,16 +150,17 @@ function updateTaskStatus(taskId, status) {
   db.prepare(`
     UPDATE tasks
     SET status = ?, completed_at = ?, deadline_hit = ?
-    WHERE id = ?
-  `).run(status, completedAt, deadlineHit, taskId);
+    WHERE id = ? AND user_id = ?
+  `).run(status, completedAt, deadlineHit, taskId, userId);
 
-  return findTask(taskId);
+  return findTask(taskId, userId);
 }
 
 router.get('/', (req, res, next) => {
   try {
-    const filters = ['template_name IS NULL'];
-    const params = [];
+    const filters = ['user_id = ?', 'template_name IS NULL'];
+    const params = [req.user.id];
+    
     const search = String(req.query.search || '').trim().toLowerCase();
     const status = String(req.query.status || 'ALL');
     const date = db.toIsoDate(req.query.date);
@@ -193,8 +194,8 @@ router.get('/', (req, res, next) => {
 router.get('/templates', (req, res, next) => {
   try {
     const tasks = db.prepare(
-      taskQuery('WHERE template_name IS NOT NULL', 'ORDER BY template_name')
-    ).all().map(hydrateTask);
+      taskQuery('WHERE user_id = ? AND template_name IS NOT NULL', 'ORDER BY template_name')
+    ).all(req.user.id).map(hydrateTask);
     res.json(tasks);
   } catch (err) {
     next(err);
@@ -203,7 +204,7 @@ router.get('/templates', (req, res, next) => {
 
 router.post('/from-template/:templateId', (req, res, next) => {
   try {
-    const template = findTask(req.params.templateId);
+    const template = findTask(req.params.templateId, req.user.id);
     if (!template || !template.template_name) {
       throw error(404, 'Template not found');
     }
@@ -216,10 +217,10 @@ router.post('/from-template/:templateId', (req, res, next) => {
         completed_at: null,
         deadline_hit: 0
       });
-      const result = saveTask(payload);
+      const result = saveTask(payload, req.user.id);
       syncSubtasks(result.lastInsertRowid, template.subtasks);
       syncAttachments(result.lastInsertRowid, template.attachmentLinks);
-      return findTask(result.lastInsertRowid);
+      return findTask(result.lastInsertRowid, req.user.id);
     })();
 
     res.status(201).json(task);
@@ -231,8 +232,8 @@ router.post('/from-template/:templateId', (req, res, next) => {
 router.get('/recurring/generate', (req, res, next) => {
   try {
     const recurringTasks = db.prepare(
-      taskQuery("WHERE recurrence != 'NONE' AND template_name IS NULL")
-    ).all();
+      taskQuery("WHERE user_id = ? AND recurrence != 'NONE' AND template_name IS NULL")
+    ).all(req.user.id);
 
     const tasks = db.transaction(() => {
       const created = [];
@@ -242,8 +243,8 @@ router.get('/recurring/generate', (req, res, next) => {
         const exists = db.prepare(`
           SELECT id
           FROM tasks
-          WHERE recurrence_parent = ? AND scheduled_date = ?
-        `).get(task.id, scheduledDate);
+          WHERE user_id = ? AND recurrence_parent = ? AND scheduled_date = ?
+        `).get(req.user.id, task.id, scheduledDate);
 
         if (!exists) {
           const payload = db.normalizeTaskPayload({
@@ -256,8 +257,8 @@ router.get('/recurring/generate', (req, res, next) => {
             deadline_hit: 0,
             completed_at: null
           });
-          const result = saveTask(payload);
-          created.push(findTask(result.lastInsertRowid));
+          const result = saveTask(payload, req.user.id);
+          created.push(findTask(result.lastInsertRowid, req.user.id));
         }
       });
       return created;
@@ -277,15 +278,15 @@ router.post('/reschedule', (req, res, next) => {
     const todayIso = today.toISOString().slice(0, 10);
 
     const missedTasks = db.prepare(taskQuery(
-      "WHERE deadline < ? AND status != 'DONE' AND template_name IS NULL",
+      "WHERE user_id = ? AND deadline < ? AND status != 'DONE' AND template_name IS NULL",
       'ORDER BY priority_score DESC, created_at ASC'
-    )).all(todayIso);
+    )).all(req.user.id, todayIso);
 
     const futureTasks = db.prepare(`
       SELECT scheduled_date, estimated_minutes, buffer_minutes
       FROM tasks
-      WHERE scheduled_date >= ? AND template_name IS NULL
-    `).all(todayIso);
+      WHERE user_id = ? AND scheduled_date >= ? AND template_name IS NULL
+    `).all(req.user.id, todayIso);
 
     const capacity = {};
     for (let i = 0; i < 60; i += 1) {
@@ -307,9 +308,9 @@ router.post('/reschedule', (req, res, next) => {
         const effectiveMinutes = (task.estimated_minutes || 0) + (task.buffer_minutes || 0);
         const slot = Object.keys(capacity).find((date) => capacity[date] >= effectiveMinutes);
         if (slot) {
-          db.prepare('UPDATE tasks SET scheduled_date = ? WHERE id = ?').run(slot, task.id);
+          db.prepare('UPDATE tasks SET scheduled_date = ? WHERE id = ? AND user_id = ?').run(slot, task.id, req.user.id);
           capacity[slot] -= effectiveMinutes;
-          updated.push(findTask(task.id));
+          updated.push(findTask(task.id, req.user.id));
         }
       });
       return updated;
@@ -361,7 +362,7 @@ router.post('/import-csv', upload.single('file'), (req, res, next) => {
           notes: row.notes || row.Notes,
           status: row.status || row.Status || 'TODO'
         });
-        saveTask(payload);
+        saveTask(payload, req.user.id);
         imported += 1;
       });
     })();
@@ -374,7 +375,7 @@ router.post('/import-csv', upload.single('file'), (req, res, next) => {
 
 router.get('/:id', (req, res, next) => {
   try {
-    const task = findTask(req.params.id);
+    const task = findTask(req.params.id, req.user.id);
     if (!task) {
       throw error(404, 'Task not found');
     }
@@ -392,10 +393,10 @@ router.post('/', (req, res, next) => {
     }
 
     const task = db.transaction(() => {
-      const result = saveTask(payload);
+      const result = saveTask(payload, req.user.id);
       syncSubtasks(result.lastInsertRowid, req.body.subtasks);
       syncAttachments(result.lastInsertRowid, req.body.attachmentLinks);
-      return findTask(result.lastInsertRowid);
+      return findTask(result.lastInsertRowid, req.user.id);
     })();
 
     res.status(201).json(task);
@@ -406,7 +407,7 @@ router.post('/', (req, res, next) => {
 
 router.put('/:id', (req, res, next) => {
   try {
-    const existing = findTask(req.params.id);
+    const existing = findTask(req.params.id, req.user.id);
     if (!existing) {
       throw error(404, 'Task not found');
     }
@@ -436,13 +437,13 @@ router.put('/:id', (req, res, next) => {
             priority_score = @priority_score,
             deadline_hit = @deadline_hit,
             completed_at = @completed_at
-        WHERE id = ?
-      `).run(payload, req.params.id);
+        WHERE id = ? AND user_id = ?
+      `).run({ ...payload, user_id: req.user.id }, req.params.id, req.user.id);
       syncSubtasks(req.params.id, req.body.subtasks);
       syncAttachments(req.params.id, req.body.attachmentLinks);
     })();
 
-    res.json(findTask(req.params.id));
+    res.json(findTask(req.params.id, req.user.id));
   } catch (err) {
     next(err);
   }
@@ -455,7 +456,7 @@ router.patch('/:id/status', (req, res, next) => {
       throw error(400, 'Valid status is required');
     }
 
-    res.json(updateTaskStatus(req.params.id, status));
+    res.json(updateTaskStatus(req.params.id, status, req.user.id));
   } catch (err) {
     next(err);
   }
@@ -463,7 +464,7 @@ router.patch('/:id/status', (req, res, next) => {
 
 router.patch('/:id/complete', (req, res, next) => {
   try {
-    res.json(updateTaskStatus(req.params.id, 'DONE'));
+    res.json(updateTaskStatus(req.params.id, 'DONE', req.user.id));
   } catch (err) {
     next(err);
   }
@@ -471,7 +472,7 @@ router.patch('/:id/complete', (req, res, next) => {
 
 router.patch('/:id/incomplete', (req, res, next) => {
   try {
-    res.json(updateTaskStatus(req.params.id, 'TODO'));
+    res.json(updateTaskStatus(req.params.id, 'TODO', req.user.id));
   } catch (err) {
     next(err);
   }
@@ -479,7 +480,7 @@ router.patch('/:id/incomplete', (req, res, next) => {
 
 router.delete('/:id', (req, res, next) => {
   try {
-    const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
+    const result = db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
     if (!result.changes) {
       throw error(404, 'Task not found');
     }
@@ -499,7 +500,7 @@ router.delete('/bulk', (req, res, next) => {
     db.transaction(() => {
       // Create placeholders (?,?,?)
       const placeholders = ids.map(() => '?').join(',');
-      db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders})`).run(...ids);
+      db.prepare(`DELETE FROM tasks WHERE user_id = ? AND id IN (${placeholders})`).run(req.user.id, ...ids);
     })();
 
     res.json({ deleted: ids.length });
@@ -510,7 +511,7 @@ router.delete('/bulk', (req, res, next) => {
 
 router.post('/:id/duplicate', (req, res, next) => {
   try {
-    const original = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    const original = db.prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
     if (!original) throw error(404, 'Task not found');
 
     let newTask;
@@ -525,13 +526,13 @@ router.post('/:id/duplicate', (req, res, next) => {
 
       const insert = db.prepare(`
         INSERT INTO tasks (${columns})
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       `);
       
       const normalized = db.normalizeTaskPayload(copy);
       
       const values = [
-        normalized.title, normalized.description, normalized.deadline,
+        req.user.id, normalized.title, normalized.description, normalized.deadline,
         normalized.estimated_minutes, normalized.priority, normalized.energy_level,
         normalized.scheduled_date, normalized.status, normalized.tags,
         normalized.notes, normalized.template_name, normalized.recurrence,
