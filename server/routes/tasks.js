@@ -145,6 +145,9 @@ function updateTaskStatus(taskId, status, userId) {
     completedAt = new Date().toISOString();
     const today = new Date().toISOString().slice(0, 10);
     deadlineHit = !task.deadline || today <= task.deadline ? 1 : 0;
+    if (task.status !== 'DONE') {
+      db.createNotification(userId, `Task completed: ${task.title}`, 'SUCCESS');
+    }
   }
 
   db.prepare(`
@@ -396,7 +399,9 @@ router.post('/', (req, res, next) => {
       const result = saveTask(payload, req.user.id);
       syncSubtasks(result.lastInsertRowid, req.body.subtasks);
       syncAttachments(result.lastInsertRowid, req.body.attachmentLinks);
-      return findTask(result.lastInsertRowid, req.user.id);
+      const newTask = findTask(result.lastInsertRowid, req.user.id);
+      db.createNotification(req.user.id, `New task created: ${newTask.title}`, 'INFO');
+      return newTask;
     })();
 
     res.status(201).json(task);

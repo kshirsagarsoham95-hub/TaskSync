@@ -29,7 +29,7 @@ export function renderAdmin(overview, users) {
   `;
 
   let usersRows = users.map(u => `
-    <tr>
+    <tr class="admin-user-row" data-id="${u.id}" style="cursor: pointer;">
       <td>${u.username}</td>
       <td>${u.display_name}</td>
       <td>${u.role}</td>
@@ -67,8 +67,25 @@ export function renderAdmin(overview, users) {
 
   document.getElementById('btn-create-user').onclick = showCreateUserModal;
   
+  root.querySelectorAll('.admin-user-row').forEach(row => {
+    row.onclick = async (e) => {
+      if (e.target.closest('.btn-del-user')) return;
+      
+      try {
+        const id = row.dataset.id;
+        const profile = await api.adminUserProfile(id);
+        const tasks = await api.adminUserTasks(id);
+        
+        showUserProfileModal(profile, tasks);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    };
+  });
+
   root.querySelectorAll('.btn-del-user').forEach(btn => {
-    btn.onclick = async () => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
       if (!confirm('Delete user?')) return;
       try {
         await api.adminDeleteUser(btn.dataset.id);
@@ -128,4 +145,49 @@ function showCreateUserModal() {
       showToast(err.message, 'error');
     }
   };
+}
+
+function showUserProfileModal(profile, tasks) {
+  const stats = profile.stats || {};
+  const totalTasks = stats.totalTasks || 0;
+  const doneTasks = stats.doneTasks || 0;
+  
+  const tasksHtml = tasks.length === 0 ? '<p>No tasks found.</p>' : `
+    <table style="width: 100%; text-align: left; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th style="border-bottom: 1px solid var(--border); padding: 8px;">Title</th>
+          <th style="border-bottom: 1px solid var(--border); padding: 8px;">Status</th>
+          <th style="border-bottom: 1px solid var(--border); padding: 8px;">Deadline</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tasks.map(t => `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid var(--line);">${t.title}</td>
+            <td style="padding: 8px; border-bottom: 1px solid var(--line);">${t.status}</td>
+            <td style="padding: 8px; border-bottom: 1px solid var(--line);">${t.deadline || '-'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  const content = `
+    <div style="width: 600px; max-width: 100%; max-height: 80vh; overflow-y: auto;">
+      <h2>User Profile: ${profile.username}</h2>
+      <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-elevated); border-radius: 8px;">
+        <p><strong>Display Name:</strong> ${profile.display_name}</p>
+        <p><strong>Role:</strong> ${profile.role}</p>
+        <p><strong>Joined:</strong> ${new Date(profile.created_at).toLocaleDateString()}</p>
+        <p><strong>Total Tasks:</strong> ${totalTasks} (${doneTasks} Done)</p>
+      </div>
+      <h3>Recent Tasks</h3>
+      <div class="table-wrapper" style="margin-top: 10px;">
+        ${tasksHtml}
+      </div>
+    </div>
+  `;
+  
+  openModal(content);
 }

@@ -88,4 +88,46 @@ router.delete('/users/:id', (req, res, next) => {
   }
 });
 
+router.get('/users/:id/tasks', (req, res, next) => {
+  try {
+    const userId = Number(req.params.id);
+    const tasks = db.prepare(`
+      SELECT *
+      FROM tasks
+      WHERE user_id = ? AND template_name IS NULL
+      ORDER BY created_at DESC
+    `).all(userId);
+    res.json(tasks);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/users/:id/profile', (req, res, next) => {
+  try {
+    const userId = Number(req.params.id);
+    const user = db.prepare(`
+      SELECT id, username, display_name, role, created_at
+      FROM users
+      WHERE id = ?
+    `).get(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const stats = db.prepare(`
+      SELECT 
+        COUNT(*) as totalTasks,
+        SUM(CASE WHEN status = 'DONE' THEN 1 ELSE 0 END) as doneTasks
+      FROM tasks
+      WHERE user_id = ? AND template_name IS NULL
+    `).get(userId);
+
+    res.json({ ...user, stats });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

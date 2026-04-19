@@ -50,6 +50,23 @@ router.put('/me/settings', (req, res) => {
   }
 });
 
+router.put('/me/profession', (req, res) => {
+  const user = getRequestUser(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+  try {
+    const { profession } = req.body;
+    if (!profession) {
+      return res.status(400).json({ error: 'Profession is required' });
+    }
+    const updatedUser = db.updateUserProfession(user.id, profession);
+    return res.json({ user: updatedUser, message: 'Profession updated' });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
 router.put('/me/profile', (req, res) => {
   const user = getRequestUser(req);
   if (!user) {

@@ -22,6 +22,7 @@ app.use('/api/subtasks', require('./routes/subtasks'));
 app.use('/api/attachments', require('./routes/attachments'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api', require('./routes/comments'));
 app.use('/api', require('./routes/timeTracking'));
 app.use(require('./middleware/errorHandler'));

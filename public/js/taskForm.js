@@ -1,6 +1,7 @@
 import { openModal, closeModal } from './modal.js';
 import { createTagEditor } from './tags.js';
 import { createSubtaskEditor } from './subtasks.js';
+import { state } from './app.js';
 
 function isValidUrl(value) {
   try {
@@ -134,9 +135,35 @@ export function openTaskForm({ task = null, onSubmit }) {
     });
     const templateCheckbox = fragment.querySelector('#task-is-template');
     if (templateCheckbox) {
-
       templateCheckbox.checked = Boolean(task.template_name);
-}
+    }
+  }
+
+  const profCategories = {
+    'Student': ['Study', 'Assignments', 'Exams', 'Personal'],
+    'Corporate': ['Meetings', 'Projects', 'Reports', 'Personal'],
+    'Freelancer': ['Client Work', 'Invoices', 'Marketing', 'Personal'],
+    'Other': ['Work', 'Personal', 'Urgent', 'Health']
+  };
+
+  const currentProf = (state.user && state.user.profession) ? state.user.profession : 'Other';
+  const categories = profCategories[currentProf] || profCategories['Other'];
+  
+  const categoryContainer = fragment.querySelector('#suggested-categories');
+  if (categoryContainer) {
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ghost-btn';
+      btn.style.padding = '4px 8px';
+      btn.style.fontSize = '0.85rem';
+      btn.style.border = '1px solid var(--border)';
+      btn.textContent = '+' + cat;
+      btn.onclick = () => {
+        tagEditor.addTag(cat);
+      };
+      categoryContainer.appendChild(btn);
+    });
   }
 
   fragment.querySelector('#btn-add-subtask').addEventListener('click', () => subtaskEditor.addSubtask());

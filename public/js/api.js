@@ -46,6 +46,11 @@ export const api = {
       method: 'PUT', headers: json, body: JSON.stringify(payload)
     });
   },
+  updateProfession(payload) {
+    return request('/api/auth/me/profession', {
+      method: 'PUT', headers: json, body: JSON.stringify(payload)
+    });
+  },
   updateProfile(payload) {
     return request('/api/auth/me/profile', {
       method: 'PUT', headers: json, body: JSON.stringify(payload)
@@ -115,5 +120,7 @@ export const api = {
   adminOverview()            { return request('/api/admin/overview'); },
   adminUsers()               { return request('/api/admin/users'); },
   adminCreateUser(payload)   { return request('/api/admin/users', { method: 'POST', headers: json, body: JSON.stringify(payload) }); },
-  adminDeleteUser(id)        { return request(`/api/admin/users/${id}`, { method: 'DELETE' }); }
+  adminDeleteUser(id)        { return request(`/api/admin/users/${id}`, { method: 'DELETE' }); },
+  adminUserProfile(id)       { return request(`/api/admin/users/${id}/profile`); },
+  adminUserTasks(id)         { return request(`/api/admin/users/${id}/tasks`); }
 };

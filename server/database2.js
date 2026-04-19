@@ -44,7 +44,6 @@ const schemaStatements = [
     password_hash TEXT NOT NULL,
     display_name TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'USER',
-    profession TEXT DEFAULT 'Other',
     recommendation_setting INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now'))
   )`,
@@ -157,7 +156,7 @@ function ensureSchema(database) {
   });
 
   try {
-    database.exec('ALTER TABLE tasks ADD COLUMN user_id INTEGER DEFAULT 1');
+    database.exec('ALTER TABLE tasks ADD COLUMN user_id INTEGER DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE');
   } catch (error) {
     if (!String(error.message).toLowerCase().includes('duplicate column')) {
       throw error;
@@ -174,14 +173,6 @@ function ensureSchema(database) {
 
   try {
     database.exec('ALTER TABLE users ADD COLUMN recommendation_setting INTEGER DEFAULT 1');
-  } catch (error) {
-    if (!String(error.message).toLowerCase().includes('duplicate column')) {
-      throw error;
-    }
-  }
-
-  try {
-    database.exec("ALTER TABLE users ADD COLUMN profession TEXT DEFAULT 'Other'");
   } catch (error) {
     if (!String(error.message).toLowerCase().includes('duplicate column')) {
       throw error;
@@ -229,8 +220,7 @@ function ensureSchema(database) {
 }
 
 function resolveDatabase() {
-  const fallbackDir = path.join(__dirname, '..', '.data');
-  fs.mkdirSync(fallbackDir, { recursive: true });
+  const fallbackDir = path.join(__dirname, '..');
 
   const candidates = [
     path.join(fallbackDir, 'tasksync.db'),
@@ -247,8 +237,7 @@ function resolveDatabase() {
       adapter.dbPath = dbPath;
       return adapter;
     } catch (error) {
-      console.error('DB INIT ERROR FOR', dbPath, ':', error.message, error);
-      failures.push(`${dbPath}: ${error.message}`);
+      console.log('ERROR HERE:', error); failures.push(`${dbPath}: ${error.message}`);
     }
   }
 
@@ -321,7 +310,6 @@ function sanitizeUser(user) {
     username: user.username,
     display_name: user.display_name,
     role: user.role,
-    profession: user.profession || 'Other',
     recommendation_setting: user.recommendation_setting ?? 1,
     created_at: user.created_at
   };
@@ -329,7 +317,7 @@ function sanitizeUser(user) {
 
 function getUserById(userId) {
   return sanitizeUser(db.prepare(`
-    SELECT id, username, display_name, role, profession, recommendation_setting, created_at
+    SELECT id, username, display_name, role, recommendation_setting, created_at
     FROM users
     WHERE id = ?
   `).get(userId));
@@ -363,14 +351,6 @@ function updateUserSettings(userId, recommendationSetting) {
   return getUserById(userId);
 }
 
-function updateUserProfession(userId, profession) {
-  db.prepare('UPDATE users SET profession = ? WHERE id = ?').run(
-    String(profession).trim(),
-    userId
-  );
-  return getUserById(userId);
-}
-
 function authenticateUser(username, password) {
   const user = db.prepare(`
     SELECT *
@@ -399,7 +379,6 @@ db.hashPassword = hashPassword;
 db.getUserById = getUserById;
 db.registerUser = registerUser;
 db.updateUserSettings = updateUserSettings;
-db.updateUserProfession = updateUserProfession;
 db.authenticateUser = authenticateUser;
 db.sanitizeUser = sanitizeUser;
 db.createNotification = createNotification;

@@ -48,6 +48,21 @@
             <input type="date" id="date-filter" title="Filter by scheduled date">
             <button id="search-clear" type="button" title="Clear filters">&#10005;</button>
           </div>
+          <div class="notification-container" style="position: relative; margin-right: 10px; display: flex; align-items: center;">
+            <button id="btn-notifications" class="ghost-btn" style="font-size: 1.2rem; position: relative;" title="Notifications">
+              &#128276;
+              <span id="notification-badge" class="badge" style="position: absolute; top: 0; right: 0; background: #ef4444; color: white; border-radius: 50%; font-size: 0.65rem; padding: 1px 4px; display: none; min-width: 12px; text-align: center; font-weight: bold;">0</span>
+            </button>
+            <div id="notification-dropdown" class="dropdown-menu" style="position: absolute; top: 100%; right: -10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; width: 320px; max-height: 400px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: none; padding: 12px; margin-top: 15px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+                <h3 style="margin: 0; font-size: 1rem;">Notifications</h3>
+                <button id="btn-mark-all-read" class="ghost-btn" style="font-size: 0.8rem; padding: 4px 8px;">Mark all read</button>
+              </div>
+              <div id="notification-list" style="display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem;">
+                <div style="text-align: center; color: var(--muted); padding: 10px;">No notifications</div>
+              </div>
+            </div>
+          </div>
           <button id="theme-toggle" type="button">Light</button>
           <div class="user-badge" id="btn-profile" style="cursor: pointer;" title="Profile & Settings">
             <span id="current-user-name">Guest</span>
@@ -412,6 +427,7 @@
             <h3>Tags</h3>
             <p>Press Enter or comma to add.</p>
           </div>
+          <div id="suggested-categories" style="margin-bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap;"></div>
           <div id="tag-editor"></div>
         </section>
         <section class="form-section">
@@ -436,6 +452,7 @@
     </template>
 
     <script type="module" src="/js/app.js"></script>
+    <script type="module" src="/js/notifications.js"></script>
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(() => {});

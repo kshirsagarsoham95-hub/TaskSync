@@ -15,7 +15,7 @@ export function createTagEditor(initialTags = []) {
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'chip';
-      chip.textContent = `${tag} ×`;
+      chip.textContent = `${tag} Ã—`;
       chip.addEventListener('click', () => {
         state.tags = state.tags.filter((item) => item !== tag);
         render();
@@ -42,5 +42,5 @@ export function createTagEditor(initialTags = []) {
 
   root.append(chips, input);
   render();
-  return { node: root, getTags: () => [...state.tags] };
+  return { node: root, getTags: () => [...state.tags], addTag };
 }
